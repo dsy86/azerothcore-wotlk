@@ -15,12 +15,11 @@ SELECT sql_rev INTO OK FROM version_db_world WHERE sql_rev = '151084328894264940
 --
 INSERT INTO version_db_world (`sql_rev`) VALUES ('1510843288942649400');
 
-UPDATE `creature_model_info` SET `BoundingRadius`=7.5, `CombatReach`=6 WHERE `DisplayID`=30890;--
+UPDATE `creature_model_info` SET `BoundingRadius`=7.5, `CombatReach`=6 WHERE `DisplayID`=30890;
 -- END UPDATING QUERIES
 --
 COMMIT;
-END;
-//
+END //
 DELIMITER ;
 CALL updateDb();
 DROP PROCEDURE IF EXISTS `updateDb`;
