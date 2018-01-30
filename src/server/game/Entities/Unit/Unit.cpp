@@ -9220,10 +9220,12 @@ ReputationRank Unit::GetReactionTo(Unit const* target) const
                     return REP_HOSTILE;
 
                 // same group - checks dependant only on our faction - skip FFA_PVP for example
-                if (selfPlayerOwner->IsInRaidWith(targetPlayerOwner))
+                if (selfPlayerOwner->IsInPartyWith(targetPlayerOwner))
                     return REP_FRIENDLY; // return true to allow config option AllowTwoSide.Interaction.Group to work
                     // however client seems to allow mixed group parties, because in 13850 client it works like:
                     // return GetFactionReactionTo(GetFactionTemplateEntry(), target);
+                if (selfPlayerOwner->InBattleground() && selfPlayerOwner->GetBattleground()->GetStatus() != STATUS_IN_PROGRESS)
+                    return REP_FRIENDLY; // 战场没在进行中时，是友好状态
             }
 
             // check FFA_PVP
@@ -19353,7 +19355,9 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
             // FG: pretend that OTHER players in own group are friendly ("blue")
             else if (index == UNIT_FIELD_BYTES_2 || index == UNIT_FIELD_FACTIONTEMPLATE)
             {
-                if (IsControlledByPlayer() && target != this && sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP) && IsInRaidWith(target))
+                bool isWaiting = target->InBattleground() && target->GetBattleground()->GetStatus() != STATUS_IN_PROGRESS;
+                //同组才友好，或者战场准备阶段友好
+                if (IsControlledByPlayer() && target != this && (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP) && IsInPartyWith(target) || isWaiting))
                 {
                     FactionTemplateEntry const* ft1 = GetFactionTemplateEntry();
                     FactionTemplateEntry const* ft2 = target->GetFactionTemplateEntry();

@@ -2496,7 +2496,14 @@ void Player::ProcessDelayedOperations()
         SaveToDB(false, false);
 
     if (m_DelayedOperations & DELAYED_SPELL_CAST_DESERTER)
+    {
         CastSpell(this, 26013, true);               // Deserter
+        if (HasAura(26013))
+        {
+            Aura *aura = GetAura(26013);
+            aura->SetDuration(5 * MINUTE*IN_MILLISECONDS);//逃亡者时间改成5分钟
+        }
+    }
 
     if (m_DelayedOperations & DELAYED_BG_MOUNT_RESTORE)
     {

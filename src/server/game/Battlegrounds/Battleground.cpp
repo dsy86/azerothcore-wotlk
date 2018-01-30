@@ -1076,8 +1076,10 @@ void Battleground::RemovePlayerAtLeave(Player* player)
     RemovePlayerFromResurrectQueue(player);
 
     // resurrect on exit
+    bool isAlive = true;
     if (!player->IsAlive())
     {
+        isAlive = false;
         player->ResurrectPlayer(1.0f);
         player->SpawnCorpseBones();
     }
@@ -1117,7 +1119,7 @@ void Battleground::RemovePlayerAtLeave(Player* player)
         SendPacketToTeam(teamId, &data, player, false);
 
         // cast deserter
-        if (isBattleground() && !player->IsGameMaster() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_CAST_DESERTER))
+        if (isBattleground() && !player->IsGameMaster() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_CAST_DESERTER) && isAlive)//死的人没有逃亡者标记
             if (GetStatus() == STATUS_IN_PROGRESS || GetStatus() == STATUS_WAIT_JOIN)
                 player->ScheduleDelayedOperation(DELAYED_SPELL_CAST_DESERTER);
     }
@@ -1237,7 +1239,8 @@ void Battleground::AddPlayer(Player* player)
 
     // setup BG group membership
     PlayerAddedToBGCheckIfBGIsRunning(player);
-    AddOrSetPlayerToCorrectBgGroup(player, teamId);
+    //战场里各玩各的，不让加入到同一个团队中
+    //AddOrSetPlayerToCorrectBgGroup(player, teamId);
 
     // Log
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)

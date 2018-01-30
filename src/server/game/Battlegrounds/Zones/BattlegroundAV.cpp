@@ -48,6 +48,17 @@ BattlegroundAV::~BattlegroundAV()
 {
 }
 
+void BattlegroundAV::KilledLeaveBG(Player* player)
+{
+
+}
+
+bool BattlegroundAV::IsAllDead()
+{
+    uint32 alive = GetAlivePlayersCountByTeam(TEAM_ALLIANCE) + GetAlivePlayersCountByTeam(TEAM_HORDE) + GetAlivePlayersCountByTeam(TEAM_NEUTRAL);
+    return (alive < 2);
+}
+
 void BattlegroundAV::HandleKillPlayer(Player* player, Player* killer)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
@@ -55,6 +66,9 @@ void BattlegroundAV::HandleKillPlayer(Player* player, Player* killer)
 
     Battleground::HandleKillPlayer(player, killer);
     UpdateScore(player->GetTeamId(), -1);
+    if (IsAllDead())
+        EndBattleground(TEAM_NEUTRAL);
+
 }
 
 void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
