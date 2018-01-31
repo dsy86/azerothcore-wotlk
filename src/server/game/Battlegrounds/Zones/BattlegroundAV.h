@@ -1583,6 +1583,7 @@ class BattlegroundAV : public Battleground
 
         /*handlestuff*/ //these are functions which get called from extern
         void EventPlayerClickedOnFlag(Player* source, GameObject* gameObject);
+		void ShowScoreMenu(Player* player);
         void KilledLeaveBG(Player* player);
         bool OnlyOneSurvive() const;
         void HandleKillPlayer(Player* player, Player* killer);

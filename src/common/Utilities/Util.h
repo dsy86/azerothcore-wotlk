@@ -890,4 +890,6 @@ class EventMap
         EventStore _eventMap;
 };
 
+const char* UTF8(const char*pASCIIBuf);
+
 #endif
