@@ -390,10 +390,10 @@ void BattlegroundQueue::FillPlayersToBG(const int32 aliFree, const int32 hordeFr
     m_SelectionPools[TEAM_HORDE].Init();
 
     // quick check if nothing we can do:
-    if (!sBattlegroundMgr->isTesting())
-        if ((aliFree > hordeFree && m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE].empty()) ||
-            (hordeFree > aliFree && m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_HORDE].empty()))
-            return;
+    //if (!sBattlegroundMgr->isTesting())
+    //    if ((aliFree > hordeFree && m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE].empty()) ||
+    //        (hordeFree > aliFree && m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_HORDE].empty()))
+    //        return;
 
     // ally: at first fill as much as possible
     GroupsQueueType::const_iterator Ali_itr = m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE].begin();
@@ -408,7 +408,9 @@ void BattlegroundQueue::FillPlayersToBG(const int32 aliFree, const int32 hordeFr
     int32 hordeDiff = hordeFree - int32(m_SelectionPools[TEAM_HORDE].GetPlayerCount());
 
     // if free space differs too much, ballance
-    while (abs(aliDiff - hordeDiff) > 1 && (m_SelectionPools[TEAM_HORDE].GetPlayerCount() > 0 || m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() > 0))
+    //while (abs(aliDiff - hordeDiff) > 1 && (m_SelectionPools[TEAM_HORDE].GetPlayerCount() > 0 || m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() > 0))
+    //禁止平衡战场阵营人数
+    while (false)
     {
         // if results in more alliance players than horde:
         if (aliDiff < hordeDiff)
@@ -446,10 +448,10 @@ void BattlegroundQueue::FillPlayersToBGWithSpecific(const int32 aliFree, const i
     m_SelectionPools[TEAM_HORDE].Init();
 
     // quick check if nothing we can do:
-    if (!sBattlegroundMgr->isTesting())
-        if ((m_QueuedGroups[thisBracketId][BG_QUEUE_NORMAL_ALLIANCE].empty() && specificQueue->m_QueuedGroups[specificBracketId][BG_QUEUE_NORMAL_ALLIANCE].empty()) ||
-            (m_QueuedGroups[thisBracketId][BG_QUEUE_NORMAL_HORDE].empty() && specificQueue->m_QueuedGroups[specificBracketId][BG_QUEUE_NORMAL_HORDE].empty()))
-            return;
+    //if (!sBattlegroundMgr->isTesting())
+    //    if ((m_QueuedGroups[thisBracketId][BG_QUEUE_NORMAL_ALLIANCE].empty() && specificQueue->m_QueuedGroups[specificBracketId][BG_QUEUE_NORMAL_ALLIANCE].empty()) ||
+    //        (m_QueuedGroups[thisBracketId][BG_QUEUE_NORMAL_HORDE].empty() && specificQueue->m_QueuedGroups[specificBracketId][BG_QUEUE_NORMAL_HORDE].empty()))
+    //        return;
 
     // copy groups from both queues to new joined container
     GroupsQueueType m_QueuedBoth[BG_TEAMS_COUNT];
@@ -471,7 +473,9 @@ void BattlegroundQueue::FillPlayersToBGWithSpecific(const int32 aliFree, const i
     int32 hordeDiff = hordeFree - int32(m_SelectionPools[TEAM_HORDE].GetPlayerCount());
 
     // if free space differs too much, ballance
-    while (abs(aliDiff - hordeDiff) > 1 && (m_SelectionPools[TEAM_HORDE].GetPlayerCount() > 0 || m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() > 0))
+    //while (abs(aliDiff - hordeDiff) > 1 && (m_SelectionPools[TEAM_HORDE].GetPlayerCount() > 0 || m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() > 0))
+    //禁止平衡战场阵营人数
+    while (false)
     {
         // if results in more alliance players than horde:
         if (aliDiff < hordeDiff)
@@ -510,16 +514,18 @@ bool BattlegroundQueue::CheckPremadeMatch(BattlegroundBracketId bracket_id, uint
     m_SelectionPools[TEAM_ALLIANCE].Init();
     m_SelectionPools[TEAM_HORDE].Init();
 
-    if (!m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].empty() && !m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].empty())
+    if (!m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].empty() || !m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].empty())
     {
         // find premade group for both factions:
         GroupsQueueType::const_iterator ali_group, horde_group;
-        for (ali_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].begin(); ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end(); ++ali_group)
-            if (!(*ali_group)->IsInvitedToBGInstanceGUID && (*ali_group)->Players.size() >= MinPlayersPerTeam)
-                break;
-        for (horde_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].begin(); horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end(); ++horde_group)
-            if (!(*horde_group)->IsInvitedToBGInstanceGUID && (*horde_group)->Players.size() >= MinPlayersPerTeam)
-                break;
+        if (!m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].empty())
+            for (ali_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].begin(); ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end(); ++ali_group)
+                if (!(*ali_group)->IsInvitedToBGInstanceGUID && (*ali_group)->Players.size() >= MinPlayersPerTeam)
+                    break;
+        if (!m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].empty())
+            for (horde_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].begin(); horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end(); ++horde_group)
+                if (!(*horde_group)->IsInvitedToBGInstanceGUID && (*horde_group)->Players.size() >= MinPlayersPerTeam)
+                    break;
 
         // if found both groups
         if (ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end() && horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end())
@@ -530,7 +536,9 @@ bool BattlegroundQueue::CheckPremadeMatch(BattlegroundBracketId bracket_id, uint
 
             // battleground will be immediately filled (after calling this function and creating new battleground) with more players from normal queue
 
-            return m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() >= MinPlayersPerTeam && m_SelectionPools[TEAM_HORDE].GetPlayerCount() >= MinPlayersPerTeam;
+            //return m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() >= MinPlayersPerTeam && m_SelectionPools[TEAM_HORDE].GetPlayerCount() >= MinPlayersPerTeam;
+            //同阵营满足人数限制也可以开场
+            return (m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() + m_SelectionPools[TEAM_HORDE].GetPlayerCount()) >= MinPlayersPerTeam;
         }
     }
 
@@ -582,7 +590,7 @@ bool BattlegroundQueue::CheckNormalMatch(Battleground* bgTemplate, BattlegroundB
         if (sBattlegroundMgr->isTesting() && bgTemplate->isBattleground() && (m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() || m_SelectionPools[TEAM_HORDE].GetPlayerCount()))
             return true;
 
-        return m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() >= std::min<uint32>(specificTemplate->GetMinPlayersPerTeam(), 15) && m_SelectionPools[TEAM_HORDE].GetPlayerCount() >= std::min<uint32>(specificTemplate->GetMinPlayersPerTeam(), 15);
+        return (m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() + m_SelectionPools[TEAM_HORDE].GetPlayerCount()) >= std::min<uint32>(specificTemplate->GetMinPlayersPerTeam(), 15);
     }
     // if this is not random bg queue - use players only from this queue
     else
@@ -593,7 +601,9 @@ bool BattlegroundQueue::CheckNormalMatch(Battleground* bgTemplate, BattlegroundB
         if (sBattlegroundMgr->isTesting() && bgTemplate->isBattleground() && (m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() || m_SelectionPools[TEAM_HORDE].GetPlayerCount()))
             return true;
 
-        return m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() >= minPlayers && m_SelectionPools[TEAM_HORDE].GetPlayerCount() >= minPlayers;
+        //return m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() >= minPlayers && m_SelectionPools[TEAM_HORDE].GetPlayerCount() >= minPlayers;
+        //同阵营满足人数限制也可以开场
+        return (m_SelectionPools[TEAM_ALLIANCE].GetPlayerCount() + m_SelectionPools[TEAM_HORDE].GetPlayerCount()) >= minPlayers;
     }
 }
 
@@ -682,7 +692,8 @@ void BattlegroundQueue::BattlegroundQueueUpdate(BattlegroundBracketId bracket_id
         for (BattlegroundContainer::const_iterator itr = bgList.begin(); itr != bgList.end(); ++itr)
         {
             Battleground* bg = itr->second;
-            if (!BattlegroundMgr::IsArenaType(bg->GetBgTypeID()) && (bg->GetBgTypeID() == m_bgTypeId || m_bgTypeId == BATTLEGROUND_RB) && 
+            //已经开场的战场不让进人
+            if (bg->GetStatus() < STATUS_IN_PROGRESS && !BattlegroundMgr::IsArenaType(bg->GetBgTypeID()) && (bg->GetBgTypeID() == m_bgTypeId || m_bgTypeId == BATTLEGROUND_RB) &&
                 bg->HasFreeSlots() && bg->GetMinLevel() <= bracketEntry->minLevel && bg->GetMaxLevel() >= bracketEntry->maxLevel)
                 bgsToCheck.insert(bg);
         }

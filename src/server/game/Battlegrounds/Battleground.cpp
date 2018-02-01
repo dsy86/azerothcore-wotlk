@@ -257,7 +257,8 @@ void Battleground::Update(uint32 diff)
             else
             {
                 _ProcessResurrect(diff);
-                if (sBattlegroundMgr->GetPrematureFinishTime() && (GetPlayersCountByTeam(TEAM_ALLIANCE) < GetMinPlayersPerTeam() || GetPlayersCountByTeam(TEAM_HORDE) < GetMinPlayersPerTeam()))
+                //if (sBattlegroundMgr->GetPrematureFinishTime() && (GetPlayersCountByTeam(TEAM_ALLIANCE) < GetMinPlayersPerTeam() || GetPlayersCountByTeam(TEAM_HORDE) < GetMinPlayersPerTeam()))
+                if (sBattlegroundMgr->GetPrematureFinishTime() && ((GetPlayersCountByTeam(TEAM_ALLIANCE) + GetPlayersCountByTeam(TEAM_HORDE)) < 1))
                     _ProcessProgress(diff);
                 else if (m_PrematureCountDown)
                     m_PrematureCountDown = false;
@@ -566,6 +567,14 @@ inline void Battleground::_ProcessJoin(uint32 diff)
             {
                 itr->second->RemoveAurasDueToSpell(SPELL_PREPARATION);
                 itr->second->ResetAllPowers();
+                //互相刷新一下，会从友好状态变成敌对状态
+                for (BattlegroundPlayerMap::const_iterator itr2 = GetPlayers().begin(); itr2 != GetPlayers().end(); ++itr2)
+                {
+                    if (itr->second == itr2->second)
+                        continue;
+                    itr->second->SendUpdateToPlayer(itr2->second);
+                    itr2->second->SendUpdateToPlayer(itr->second);
+                }
             }
 
             // Announce BG starting

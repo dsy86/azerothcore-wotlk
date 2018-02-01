@@ -57,29 +57,29 @@ void BattlegroundAV::ShowScoreMenu(Player* player)
 
 void BattlegroundAV::KilledLeaveBG(Player* player)
 {
-	WorldPacket* data;
+	WorldPacket data;
 	uint8 type = 0;
-	data->Initialize(MSG_PVP_LOG_DATA, (1 + 1 + 4 + 40 * GetPlayerScoresSize()));
-	*data << uint8(type);                                   // type (battleground=0/arena=1)
-	*data << uint8(1);                                     // bg ended
-	*data << uint8(TEAM_NEUTRAL);                       // who win
-	size_t wpos = data->wpos();
+	data.Initialize(MSG_PVP_LOG_DATA, (1 + 1 + 4 + 40 * GetPlayerScoresSize()));
+	data << uint8(type);                                   // type (battleground=0/arena=1)
+	data << uint8(1);                                     // bg ended
+	data << uint8(TEAM_NEUTRAL);                       // who win
+	size_t wpos = data.wpos();
 	uint32 scoreCount = 0;
-	*data << uint32(scoreCount);                            // placeholder
+	data << uint32(scoreCount);                            // placeholder
 	BattlegroundScoreMap::iterator itr = PlayerScores.find(player->GetGUID());
 	if (itr != PlayerScores.end())
 	{
-		*data << uint64(itr->first);
-		*data << uint32(itr->second->KillingBlows);
-		*data << uint32(itr->second->HonorableKills);
-		*data << uint32(itr->second->Deaths);
-		*data << uint32(itr->second->BonusHonor);
-		*data << uint32(itr->second->DamageDone);              // damage done
-		*data << uint32(itr->second->HealingDone);             // healing done
-		*data << uint32(0x00000000);
+		data << uint64(itr->first);
+		data << uint32(itr->second->KillingBlows);
+		data << uint32(itr->second->HonorableKills);
+		data << uint32(itr->second->Deaths);
+		data << uint32(itr->second->BonusHonor);
+		data << uint32(itr->second->DamageDone);              // damage done
+		data << uint32(itr->second->HealingDone);             // healing done
+		data << uint32(0x00000000);
 	}
-	data->put(wpos, scoreCount);
-	player->GetSession()->SendPacket(data);
+	data.put(wpos, scoreCount);
+	player->GetSession()->SendPacket(&data);
 	ShowScoreMenu(player);
 }
 
@@ -96,6 +96,7 @@ void BattlegroundAV::HandleKillPlayer(Player* player, Player* killer)
 
     Battleground::HandleKillPlayer(player, killer);
     UpdateScore(player->GetTeamId(), -1);
+    KilledLeaveBG(player);
     if (OnlyOneSurvive())
         EndBattleground(TEAM_NEUTRAL);
 

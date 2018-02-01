@@ -19355,9 +19355,7 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
             // FG: pretend that OTHER players in own group are friendly ("blue")
             else if (index == UNIT_FIELD_BYTES_2 || index == UNIT_FIELD_FACTIONTEMPLATE)
             {
-                bool isWaiting = target->InBattleground() && target->GetBattleground()->GetStatus() != STATUS_IN_PROGRESS;
-                //同组才友好，或者战场准备阶段友好
-                if (IsControlledByPlayer() && target != this && (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP) && IsInPartyWith(target) || isWaiting))
+                if (IsControlledByPlayer() && target != this && sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_GROUP) && IsInPartyWith(target))
                 {
                     FactionTemplateEntry const* ft1 = GetFactionTemplateEntry();
                     FactionTemplateEntry const* ft2 = target->GetFactionTemplateEntry();
@@ -19373,6 +19371,16 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
                     else
                         fieldBuffer << m_uint32Values[index];
                 }// pussywizard / Callmephil
+                 //战场准备阶段友好
+                else if (IsControlledByPlayer() && target != this && target->InBattleground() && target->GetBattleground()->GetStatus() != STATUS_IN_PROGRESS)
+                {
+                    if (index == UNIT_FIELD_BYTES_2)
+                        // Allow targetting opposite faction in party when enabled in config
+                        fieldBuffer << (m_uint32Values[UNIT_FIELD_BYTES_2] & ((UNIT_BYTE2_FLAG_SANCTUARY /*| UNIT_BYTE2_FLAG_AURAS | UNIT_BYTE2_FLAG_UNK5*/) << 8)); // this flag is at uint8 offset 1 !!
+                    else
+                        // pretend that all other HOSTILE players have own faction, to allow follow, heal, rezz (trade wont work)
+                        fieldBuffer << uint32(target->getFaction());
+                }
                 else if (target->IsSpectator() && target->FindMap() && target->FindMap()->IsBattleArena() &&
                     (this->GetTypeId() == TYPEID_PLAYER || this->GetTypeId() == TYPEID_UNIT || this->GetTypeId() == TYPEID_DYNAMICOBJECT))
                 {
