@@ -542,14 +542,12 @@ void BattlegroundAV::StartingEventOpenDoors()
 
 void BattlegroundAV::AddPlayer(Player* player)
 {
-    if (GetStatus() > STATUS_IN_PROGRESS)
+    if (GetStatus() >= STATUS_IN_PROGRESS)
     {
         ChatHandler(player->GetSession()).PSendSysMessage(UTF8("该战场已经开场，不能进入了，请重新排队"));
-        BattlegroundQueueTypeId bgQueueTypeId = BattlegroundMgr::BGQueueTypeId(BATTLEGROUND_AV, 0);
-        uint32 qSlot = player->GetBattlegroundQueueIndex(bgQueueTypeId);
-        BattlegroundQueue& bgQueue = sBattlegroundMgr->GetBattlegroundQueue(bgQueueTypeId);
-        bgQueue.RemovePlayer(player->GetGUID(), false, qSlot);
-        player->RemoveBattlegroundQueueId(bgQueueTypeId);
+        player->LeaveBattleground(this);
+        if (player->HasAura(26013))
+            player->RemoveAura(26013);
         return;
     }
     Battleground::AddPlayer(player);
