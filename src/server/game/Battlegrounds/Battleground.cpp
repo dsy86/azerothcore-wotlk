@@ -32,6 +32,8 @@
 #include "BattlegroundRV.h"
 #include "Transport.h"
 #include "ScriptMgr.h"
+#include "BattlegroundAV.h"
+
 
 namespace Trinity
 {
@@ -497,6 +499,9 @@ inline void Battleground::_ProcessJoin(uint32 diff)
         SendWarningToAll(StartMessageIds[BG_STARTING_EVENT_FOURTH]);
         SetStatus(STATUS_IN_PROGRESS);
         SetStartDelayTime(StartDelayTimes[BG_STARTING_EVENT_FOURTH]);
+
+        if (GetBgTypeID() == BATTLEGROUND_AV)
+            ToBattlegroundAV()->SetMaxPlayerCount(GetPlayersSize());
 
         // Remove preparation
         if (isArena())

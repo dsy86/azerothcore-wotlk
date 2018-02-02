@@ -1544,7 +1544,7 @@ inline BG_AV_Nodes &operator++(BG_AV_Nodes &i){ return i = BG_AV_Nodes(i + 1); }
 
 struct BattlegroundAVScore : public BattlegroundScore
 {
-    BattlegroundAVScore(Player* player) : BattlegroundScore(player), GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), MinesCaptured(0), LeadersKilled(0), SecondaryObjectives(0) { }
+    BattlegroundAVScore(Player* player) : BattlegroundScore(player), GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), MinesCaptured(0), LeadersKilled(0), SecondaryObjectives(0), Rank(0) { }
     ~BattlegroundAVScore() { }
     uint32 GraveyardsAssaulted;
     uint32 GraveyardsDefended;
@@ -1553,12 +1553,14 @@ struct BattlegroundAVScore : public BattlegroundScore
     uint32 MinesCaptured;
     uint32 LeadersKilled;
     uint32 SecondaryObjectives;
+    uint32 Rank;
 
     uint32 GetAttr1() const final override { return GraveyardsAssaulted; }
     uint32 GetAttr2() const final override { return GraveyardsDefended; }
     uint32 GetAttr3() const final override { return TowersAssaulted; }
     uint32 GetAttr4() const final override { return TowersDefended; }
     uint32 GetAttr5() const final override { return MinesCaptured; }
+    uint32 GetRank() const  { return Rank; }
 };
 
 class BattlegroundAV : public Battleground
@@ -1585,6 +1587,7 @@ class BattlegroundAV : public Battleground
         void EventPlayerClickedOnFlag(Player* source, GameObject* gameObject);
 		void ShowScoreMenu(Player* player);
         void KilledLeaveBG(Player* player);
+        uint32 GetSurviverCount() const;
         bool OnlyOneSurvive() const;
         void HandleKillPlayer(Player* player, Player* killer);
         void HandleKillUnit(Creature* unit, Player* killer);
@@ -1601,6 +1604,9 @@ class BattlegroundAV : public Battleground
         bool IsAllTowersControlledAndCaptainAlive(TeamId teamId) const;
         
         TeamId GetPrematureWinner();
+
+        uint32 GetMaxPlayerCount() { return m_MaxPlayerCount; }
+        void SetMaxPlayerCount(uint32 value) { m_MaxPlayerCount = value; }
 
     private:
         void PostUpdateImpl(uint32 diff);
@@ -1648,6 +1654,8 @@ class BattlegroundAV : public Battleground
         bool m_CaptainAlive[2];
 
         bool m_IsInformedNearVictory[2];
+
+        uint32 m_MaxPlayerCount;
 };
 
 #endif

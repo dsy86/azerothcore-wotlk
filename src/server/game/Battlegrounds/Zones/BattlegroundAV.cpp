@@ -17,6 +17,10 @@
 #include "WorldSession.h"
 #include "Chat.h"
 
+#include "BattlegroundMgr.h"
+#include "Battleground.h"
+
+
 BattlegroundAV::BattlegroundAV()
 {
     BgObjects.resize(BG_AV_OBJECT_MAX);
@@ -51,8 +55,24 @@ BattlegroundAV::~BattlegroundAV()
 
 void BattlegroundAV::ShowScoreMenu(Player* player)
 {
-	ChatHandler(player->GetSession()).PSendSysMessage(UTF8("大吉大利，晚上吃鸡"));
-	ChatHandler(player->GetSession()).PSendSysMessage(UTF8("排名：第1 击杀：1 奖励：100钻石"));
+    uint32 rank = 0;
+    uint32 killingBlows = 0;
+    BattlegroundScoreMap::iterator itr = PlayerScores.find(player->GetGUID());
+    if (itr != PlayerScores.end())
+    {
+        rank = ((BattlegroundAVScore*)itr->second)->GetRank();
+        killingBlows = itr->second->KillingBlows;
+    }
+    const char* rankString = "";
+    string rankString2 = "";
+    if (rank == 1)
+        rankString = UTF8("大吉大利，晚上吃鸡！");
+    if (rank >= 2 && rank <= 10)
+        rankString = UTF8("你获得了前10名！");
+    if (rank == 0)
+        rankString = UTF8("出bug了");
+    ChatHandler(player->GetSession()).PSendSysMessage(rankString);
+	ChatHandler(player->GetSession()).PSendSysMessage(UTF8("排名 第%u  击杀 %u  奖励 100钻石"),rank,killingBlows);
 }
 
 void BattlegroundAV::KilledLeaveBG(Player* player)
@@ -80,12 +100,21 @@ void BattlegroundAV::KilledLeaveBG(Player* player)
 	}
 	data.put(wpos, scoreCount);
 	player->GetSession()->SendPacket(&data);
+
+    WorldPacket data2;
+    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data2, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetBgTeamId());
+    player->GetSession()->SendPacket(&data2);
+
 	ShowScoreMenu(player);
 }
 
+uint32 BattlegroundAV::GetSurviverCount() const
+{
+    return GetAlivePlayersCountByTeam(TEAM_ALLIANCE) + GetAlivePlayersCountByTeam(TEAM_HORDE) + GetAlivePlayersCountByTeam(TEAM_NEUTRAL);
+}
 bool BattlegroundAV::OnlyOneSurvive() const
 {
-    uint32 alive = GetAlivePlayersCountByTeam(TEAM_ALLIANCE) + GetAlivePlayersCountByTeam(TEAM_HORDE) + GetAlivePlayersCountByTeam(TEAM_NEUTRAL);
+    uint32 alive = GetSurviverCount();
     return (alive < 2);
 }
 
@@ -96,10 +125,14 @@ void BattlegroundAV::HandleKillPlayer(Player* player, Player* killer)
 
     Battleground::HandleKillPlayer(player, killer);
     UpdateScore(player->GetTeamId(), -1);
+
+    UpdatePlayerScore(player, SCORE_PUBG_RANK, GetSurviverCount() + 1, false);
     KilledLeaveBG(player);
     if (OnlyOneSurvive())
+    {
+        UpdatePlayerScore(killer, SCORE_PUBG_RANK, 1, false);
         EndBattleground(TEAM_NEUTRAL);
-
+    }
 }
 
 void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
@@ -509,6 +542,16 @@ void BattlegroundAV::StartingEventOpenDoors()
 
 void BattlegroundAV::AddPlayer(Player* player)
 {
+    if (GetStatus() > STATUS_IN_PROGRESS)
+    {
+        ChatHandler(player->GetSession()).PSendSysMessage(UTF8("该战场已经开场，不能进入了，请重新排队"));
+        BattlegroundQueueTypeId bgQueueTypeId = BattlegroundMgr::BGQueueTypeId(BATTLEGROUND_AV, 0);
+        uint32 qSlot = player->GetBattlegroundQueueIndex(bgQueueTypeId);
+        BattlegroundQueue& bgQueue = sBattlegroundMgr->GetBattlegroundQueue(bgQueueTypeId);
+        bgQueue.RemovePlayer(player->GetGUID(), false, qSlot);
+        player->RemoveBattlegroundQueueId(bgQueueTypeId);
+        return;
+    }
     Battleground::AddPlayer(player);
     //create score and add it to map, default values are set in constructor
     PlayerScores[player->GetGUID()] = new BattlegroundAVScore(player);
@@ -627,6 +670,8 @@ void BattlegroundAV::UpdatePlayerScore(Player* player, uint32 type, uint32 value
         case SCORE_SECONDARY_OBJECTIVES:
             ((BattlegroundAVScore*)itr->second)->SecondaryObjectives += value;
             break;
+        case SCORE_PUBG_RANK:
+            ((BattlegroundAVScore*)itr->second)->Rank = value;
         default:
             Battleground::UpdatePlayerScore(player, type, value, doAddHonor);
             break;

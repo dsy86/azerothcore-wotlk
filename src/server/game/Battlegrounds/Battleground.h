@@ -216,6 +216,7 @@ enum ScoreType
     //SOTA
     SCORE_DESTROYED_DEMOLISHER  = 18,
     SCORE_DESTROYED_WALL        = 19,
+    SCORE_PUBG_RANK             = 20, 
 };
 
 enum ArenaType
