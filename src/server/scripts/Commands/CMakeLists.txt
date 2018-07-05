@@ -15,6 +15,7 @@ set(scripts_STAT_SRCS
   Commands/cs_ban.cpp
   Commands/cs_bf.cpp
   Commands/cs_cast.cpp
+  Commands/cs_caio.cpp
   Commands/cs_character.cpp
   Commands/cs_debug.cpp
   Commands/cs_disable.cpp

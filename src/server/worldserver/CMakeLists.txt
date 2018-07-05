@@ -48,6 +48,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/deps/gsoap
   ${CMAKE_SOURCE_DIR}/deps/sockets/include
   ${CMAKE_SOURCE_DIR}/deps/SFMT
+  ${CMAKE_SOURCE_DIR}/deps/smallfolk_cpp
   ${CMAKE_SOURCE_DIR}/src/common/Collision/
   ${CMAKE_SOURCE_DIR}/src/common/Collision/Management
   ${CMAKE_SOURCE_DIR}/src/common/Collision/Models
@@ -202,8 +203,10 @@ endif()
 
 if( UNIX )
   install(TARGETS worldserver DESTINATION bin)
+  install(DIRECTORY "lua_client_scripts" DESTINATION bin)
 elseif( WIN32 )
   install(TARGETS worldserver DESTINATION "${CMAKE_INSTALL_PREFIX}")
+  install(DIRECTORY "lua_client_scripts" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()
 
 install(FILES worldserver.conf.dist DESTINATION ${CONF_DIR})

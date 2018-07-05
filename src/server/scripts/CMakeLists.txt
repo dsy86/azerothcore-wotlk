@@ -83,6 +83,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/deps/g3dlite/include
   ${CMAKE_SOURCE_DIR}/deps/SFMT
   ${CMAKE_SOURCE_DIR}/deps/zlib
+  ${CMAKE_SOURCE_DIR}/deps/smallfolk_cpp
   ${CMAKE_SOURCE_DIR}/src/common
   ${CMAKE_SOURCE_DIR}/src/common/Configuration
   ${CMAKE_SOURCE_DIR}/src/common/Cryptography

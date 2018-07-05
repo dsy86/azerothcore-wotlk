@@ -74,6 +74,7 @@
 #include "SavingSystem.h"
 #include "TicketMgr.h"
 #include "ScriptMgr.h"
+#include "AIOMsg.h"
 
 #define ZONE_UPDATE_INTERVAL (2*IN_MILLISECONDS)
 
@@ -923,6 +924,8 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
         m_charmAISpells[i] = 0;
 
     m_applyResilience = true;
+
+
 }
 
 Player::~Player()
@@ -2001,6 +2004,94 @@ void Player::RemoveRestState()
     _restTime = 0;
     RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
 }
+
+void Player::AIOMessage(AIOMsg &msg)
+{
+	SendSimpleAIOMessage(msg.dumps());
+}
+
+void Player::AIOHandle(const LuaVal scriptKey, const LuaVal handlerKey, const LuaVal a1, const LuaVal a2, const LuaVal a3, const LuaVal a4, const LuaVal a5, const LuaVal a6)
+{
+	AIOMsg msg(scriptKey, handlerKey, a1, a2, a3, a4, a5, a6);
+	SendSimpleAIOMessage(msg.dumps());
+}
+
+void Player::SendSimpleAIOMessage(const std::string &message)
+{
+	if(message.empty())
+	{
+		return;
+	}
+	std::string aioPrefix = sWorld->GetAIOPrefix();
+	size_t shortMsgLen = message.size() + aioPrefix.size() + 4; //+4 for S \t and 2 byte for message id
+
+	//If its a short message
+	if(shortMsgLen <= 2600)
+	{
+		std::string fullmsg = "S" + aioPrefix + "\t\x1\x1" + message;
+		WorldPacket data(SMSG_MESSAGECHAT, fullmsg.size() + 30);
+		data <<uint8(CHAT_MSG_WHISPER);
+		data <<int32(LANG_ADDON);
+		data <<uint64(GetGUID());
+		data <<uint32(0);
+		data <<uint64(GetGUID());
+		data <<uint32(fullmsg.size() + 1);
+		data << fullmsg;
+		data <<uint8(0);
+		GetSession()->SendPacket(&data);
+		return;
+	}
+
+	//If its a long message
+	uint16 parts = std::ceilf(float(shortMsgLen + 4) / 2600);
+
+	//parts to string
+	uint16 high = std::floorf((float)parts / 254);
+	std::string partsStr(1, high + 1);
+	partsStr += parts - high * 254 + 1;
+
+	//messageid to string
+	high = std::floorf((float)m_messageIdIndex / 254);
+	std::string messageIdStr(1, high + 1);
+	messageIdStr += m_messageIdIndex - high * 254 + 1;
+
+	//Increase or renew messageIdIndex
+	if(m_messageIdIndex>= 64769) //2^16 - 767
+	{
+		m_messageIdIndex = 1;
+	}
+	else
+	{
+		++m_messageIdIndex;
+	}
+
+	//Send in parts
+	size_t cursor = 0;
+	for(uint16 partId = 1; partId <= parts; ++partId)
+	{
+		//partid to string
+		high = std::floorf((float)partId / 254);
+		std::string partIdStr(1, high + 1);
+		partIdStr += partId - high * 254 + 1;
+
+		//send
+		std::string fullmsg = "S" + aioPrefix + "\t" + messageIdStr + partsStr + partIdStr;
+		fullmsg += message.substr(cursor, 2600);
+		WorldPacket data(SMSG_MESSAGECHAT, fullmsg.size() + 30);
+		data <<uint8(CHAT_MSG_WHISPER);
+		data <<int32(LANG_ADDON);
+		data <<uint64(GetGUID());
+		data <<uint32(0);
+		data <<uint64(GetGUID());
+		data <<uint32(fullmsg.size() + 1);
+		data << fullmsg;
+		data <<uint8(0);
+		GetSession()->SendPacket(&data);
+
+		cursor += 2600;
+	}
+}
+
 
 bool Player::BuildEnumData(PreparedQueryResult result, WorldPacket* data)
 {

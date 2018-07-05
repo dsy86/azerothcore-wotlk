@@ -23,12 +23,16 @@
 #include <set>
 #include <list>
 
+#define AIO_VERSION 1.72
+
 class Object;
 class WorldPacket;
 class WorldSession;
 class Player;
 class WorldSocket;
 class SystemMgr;
+class LuaVal;
+class AIOMsg;
 
 extern uint32 realmID;
 
@@ -159,6 +163,8 @@ enum WorldBoolConfigs
     CONFIG_QUEST_IGNORE_AUTO_ACCEPT,
     CONFIG_QUEST_IGNORE_AUTO_COMPLETE,
     CONFIG_WARDEN_ENABLED,
+    CONFIG_AIO_OBFUSCATE,
+    CONFIG_AIO_COMPRESS,
     BOOL_CONFIG_VALUE_COUNT
 };
 
@@ -326,6 +332,7 @@ enum WorldIntConfigs
     CONFIG_WARDEN_NUM_MEM_CHECKS,
     CONFIG_WARDEN_NUM_OTHER_CHECKS,
     CONFIG_BIRTHDAY_TIME,
+    CONFIG_AIO_MAXPARTS,
     INT_CONFIG_VALUE_COUNT
 };
 
@@ -781,6 +788,74 @@ class World
         std::string const& GetRealmName() const { return _realmName; } // pussywizard
         void SetRealmName(std::string name) { _realmName = name; } // pussywizard
 
+		struct AIOAddon
+		{
+			std::string name;
+			std::string code;
+			std::string file;
+			uint32 crc;
+
+			// AIOAddon container constructor
+			AIOAddon(const std::string &addonName, const std::string &addonFile)
+				: name(addonName), file(addonFile),
+				crc(0)
+			{ }
+		};
+
+		// AIO prefix configured in worldserver.conf
+		std::string GetAIOPrefix() const { return m_aioprefix;}
+
+		// AIO client LUA files path configured in worldserver.conf
+		std::string GetAIOClientScriptPath() const { return m_aioclientpath;}
+
+		// Forces reload on all player AIO addons
+		// Syncs player AIO addons with server
+		void ForceReloadPlayerAddons();
+
+		// Forces reset on all player AIO addons
+		// Player AIO addons and addon data is deleted and downloaded again
+		void ForceResetPlayerAddons();
+
+		// Sends an AIO message to all players
+		// See: class AIOMsg
+		void AIOMessageAll(AIOMsg &msg);
+
+		// Sends a simple string message to all players
+
+		// AIO can only understand smallfolk LuaVal::dumps() format
+		// Handler functions are called by creating a table as below
+		// {
+		//     {n, ScriptName, HandlerName(optional), Arg1..N(optional) },
+		//     {n, AnotherScriptName, AnotherHandlerName(optional), Arg1..N(optional) }
+		// }
+		// Where n is number of arguments including handler name as a argument
+		void SendAllSimpleAIOMessage(const std::string &message);
+
+		// Reloads client side AIO addon files and force reloads
+		// all player AIO addons
+		// Returns true if successful, false if an error occurred
+		bool ReloadAddons();
+		
+		// Adds a WoW AIO addon file to the list of addons with a unique
+		// addon name to send on AIO client initialization.
+		// Returns true if addon was added, false if addon name is already taken
+		//
+		// It is required to call World::ForceReloadPlayerAddons()
+		// if addons are added after server is fully initialized
+		// for online players to load the added addons.
+		bool AddAddon(const AIOAddon &addon);
+
+		// Removes an addon from addon list and force reloads affected players
+		// Returns permission id if an addon was removed, 0 if addon not found
+		//
+		// It is required to call World::ForceReloadPlayerAddons()
+		// if addons are added after server is fully initialized
+		// for online players to load the added addons.
+		uint32 RemoveAddon(const std::string &addonName);
+
+		// For internal use only
+		size_t PrepareClientAddons(const LuaVal &clientData, LuaVal &addonsTable, LuaVal &cacheTable, Player *forPlayer) const;
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -878,6 +953,13 @@ class World
 
         void ProcessQueryCallbacks();
         ACE_Future_Set<PreparedQueryResult> m_realmCharCallbacks;
+
+		typedef std::list<World::AIOAddon> AddonCodeListType;
+		AddonCodeListType m_AddonList;
+		std::string m_aioprefix;
+		std::string m_aioclientpath;
+
+		friend class AIOScript;
 };
 
 #define sWorld ACE_Singleton<World, ACE_Null_Mutex>::instance()

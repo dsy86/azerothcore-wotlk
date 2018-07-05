@@ -347,6 +347,109 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recvData)
             Player* receiver = ObjectAccessor::FindPlayerByName(to, false);
             bool senderIsPlayer = AccountMgr::IsPlayerAccount(GetSecurity());
             bool receiverIsPlayer = AccountMgr::IsPlayerAccount(receiver ? receiver->GetSession()->GetSecurity() : SEC_PLAYER);
+
+			//AIO
+			size_t delimPos;
+			if(lang == LANG_ADDON && receiver)
+			{
+				std::string prefix;
+				bool isAIOMessage = false;
+				delimPos = msg.find('\t');
+
+				if(delimPos != std::string::npos)
+				{
+					prefix = msg.substr(0, delimPos);
+					if(prefix == "C" + sWorld->GetAIOPrefix())
+					{
+						isAIOMessage = true;
+					}
+				}
+
+				if(isAIOMessage)
+				{
+					if(receiver != sender)
+					{
+						return;
+					}
+
+					//Must have meta data
+					uint16 messageId;
+					if((msg.size() - delimPos - 1) >= 2)
+					{
+						messageId = (msg[delimPos + 1] - 1) * 254 + msg[delimPos + 2] - 1;
+
+						//If its a short message
+						if(messageId == 0) //messageId = 0
+						{
+							sScriptMgr->OnAddonMessage(sender, msg.substr(delimPos + 3));
+							break;
+						}
+					}
+					//Its a long message
+					if((msg.size() - delimPos - 1) >= 6)
+					{
+						uint32 parts = (msg[delimPos + 3] - 1) * 254 + msg[delimPos + 4] - 1;
+						if(parts < 2)
+						{
+							sLog->outAIOMessage("HandleAddonMessagechatOpcode: Received AIO addon message with number of parts: %u (<2). Message Id: %u, Sender: %s", parts, messageId, sender->GetName().c_str());
+							return;
+						}
+						uint32 maxparts = sWorld->getIntConfig(CONFIG_AIO_MAXPARTS);
+						if(parts> maxparts)
+						{
+							sLog->outAIOMessage("HandleAddonMessagechatOpcode: Received AIO addon message with too many parts: %u (> %u). Message Id: %u, Sender: %s", parts, maxparts, messageId, sender->GetName().c_str());
+							return;
+						}
+
+						uint32 partId = (msg[delimPos + 5] - 1) * 254 + msg[delimPos + 6] - 1;
+
+						//Check if message exists
+						AddonMessageBufferMap::iterator messagePartsItr = _addonMessageBuffer.find(messageId);
+						if(messagePartsItr == _addonMessageBuffer.end())
+						{
+							messagePartsItr = _addonMessageBuffer.insert(std::make_pair(messageId, LongMessageBufferInfo())).first;
+						}
+						else
+						{
+							//If message already exist and has different number of parts remove it
+							if(parts != messagePartsItr->second.Parts)
+							{
+								messagePartsItr->second = LongMessageBufferInfo();
+							}
+						}
+
+						messagePartsItr->second.Parts = parts;
+						messagePartsItr->second.Map[partId] = msg.substr(delimPos + 7);
+
+						//If there are enough parts
+						if(messagePartsItr->second.Map.size()>= messagePartsItr->second.Parts)
+						{
+							//Assemble the parts
+							std::string actualAIOMessage;
+							for(AddonPartStringMap::const_iterator itr = messagePartsItr->second.Map.begin();
+								itr != messagePartsItr->second.Map.end();
+								++itr)
+							{
+								actualAIOMessage += itr->second;
+							}
+
+							sScriptMgr->OnAddonMessage(sender, actualAIOMessage);
+							_addonMessageBuffer.erase(messagePartsItr);
+							break;
+						}
+						else //Or else wait for other packets to arrive
+						{
+							break;
+						}
+					}
+					else
+					{
+						sLog->outAIOMessage("HandleAddonMessagechatOpcode: Received AIO long addon message without meta data, Sender: %s", sender->GetName().c_str());
+						break;
+					}
+				}
+			}
+			
             if (!receiver || (senderIsPlayer && !receiverIsPlayer && !receiver->isAcceptWhispers() && !receiver->IsInWhisperWhiteList(sender->GetGUID())))
             {
                 SendPlayerNotFoundNotice(to);

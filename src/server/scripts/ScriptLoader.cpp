@@ -58,6 +58,7 @@ void AddSC_tele_commandscript();
 void AddSC_ticket_commandscript();
 void AddSC_titles_commandscript();
 void AddSC_wp_commandscript();
+void AddSC_caio_commandscript();
 
 #ifdef SCRIPTS
 //world
@@ -1181,5 +1182,12 @@ void AddCustomScripts()
 {
 #ifdef SCRIPTS
 	//~ AddSC_MySuperScript();
+#endif
+}
+
+void AddAIOScripts()
+{
+#ifdef SCRIPTS
+    AddSC_caio_commandscript();
 #endif
 }

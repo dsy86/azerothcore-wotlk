@@ -1,3 +1,6 @@
 [submodule "data/doc"]
 	path = data/doc
 	url = https://github.com/azerothcore/azerothcore-wotlk.wiki.git
+[submodule "deps/smallfolk_cpp/smallfolk_cpp"]
+	path = deps/smallfolk_cpp/smallfolk_cpp
+	url = https://github.com/Rochet2/smallfolk_cpp.git

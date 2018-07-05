@@ -605,10 +605,22 @@ SQLDeveloperLogFile = ""
 SQLDriverLogFile = ""
 
 #
-#    SQLDriverQueryLogging
+#    AioLogFile
 #        Description: Log SQL queries to the SQLDriverLogFile and console.
 #        Default:     0 - (Disabled, Query errors only)
 #                     1 - (Enabled, Full query logging - may have performance impact)
+
+AioLogFile = "aio.log"
+
+#
+#    AioLogTimestamp
+#        Description: Append timestamp to the aio log file name.
+#                     Logname_YYYY-MM-DD_HH-MM-SS.Ext for Logname.Ext
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
+
+AioLogTimestamp = 0
+
 
 SQLDriverQueryLogging = 0
 
@@ -3019,3 +3031,35 @@ PlayerDump.DisallowOverwrite = 1
 
 #
 ###################################################################################################
+
+###################################################################################################
+#
+# AIO settings
+#
+#    AIO.prefix
+#        Prefix string used for AIO addon messages
+#        Default: "AIO"
+#
+#    AIO.MaxParts
+#        Maximum number of parts a client can send to server
+#        Each part can have maximum 255 bytes
+#        Default: 4
+#
+#    AIO.ClientScriptPath
+#        Path to client lua scripts to send to the client
+#        Default: "lua_client_scripts"
+#
+#    AIO.Obfuscate
+#        Whether to obfuscate before sending addon code
+#        Default: 1
+#
+#    AIO.Compress
+#        Whether to compress before sending addon code
+#        Default: 1
+#
+
+AIO.Prefix = "AIO"
+AIO.MaxParts = 4
+AIO.ClientScriptPath = "lua_client_scripts"
+AIO.Obfuscate = 1
+AIO.Compress = 1
