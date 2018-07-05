@@ -72,40 +72,40 @@ void BattlegroundAV::ShowScoreMenu(Player* player)
     if (rank == 0)
         rankString = UTF8("出bug了");
     ChatHandler(player->GetSession()).PSendSysMessage(rankString);
-	ChatHandler(player->GetSession()).PSendSysMessage(UTF8("排名 第%u  击杀 %u  奖励 100钻石"),rank,killingBlows);
+    ChatHandler(player->GetSession()).PSendSysMessage(UTF8("排名 第%u  击杀 %u  奖励 100钻石"),rank,killingBlows);
 }
 
 void BattlegroundAV::KilledLeaveBG(Player* player)
 {
-	WorldPacket data;
-	uint8 type = 0;
-	data.Initialize(MSG_PVP_LOG_DATA, (1 + 1 + 4 + 40 * GetPlayerScoresSize()));
-	data << uint8(type);                                   // type (battleground=0/arena=1)
-	data << uint8(1);                                     // bg ended
-	data << uint8(TEAM_NEUTRAL);                       // who win
-	size_t wpos = data.wpos();
-	uint32 scoreCount = 0;
-	data << uint32(scoreCount);                            // placeholder
-	BattlegroundScoreMap::iterator itr = PlayerScores.find(player->GetGUID());
-	if (itr != PlayerScores.end())
-	{
-		data << uint64(itr->first);
-		data << uint32(itr->second->KillingBlows);
-		data << uint32(itr->second->HonorableKills);
-		data << uint32(itr->second->Deaths);
-		data << uint32(itr->second->BonusHonor);
-		data << uint32(itr->second->DamageDone);              // damage done
-		data << uint32(itr->second->HealingDone);             // healing done
-		data << uint32(0x00000000);
-	}
-	data.put(wpos, scoreCount);
-	player->GetSession()->SendPacket(&data);
+    WorldPacket data;
+    uint8 type = 0;
+    data.Initialize(MSG_PVP_LOG_DATA, (1 + 1 + 4 + 40 * GetPlayerScoresSize()));
+    data << uint8(type);                                   // type (battleground=0/arena=1)
+    data << uint8(1);                                     // bg ended
+    data << uint8(TEAM_NEUTRAL);                       // who win
+    size_t wpos = data.wpos();
+    uint32 scoreCount = 0;
+    data << uint32(scoreCount);                            // placeholder
+    BattlegroundScoreMap::iterator itr = PlayerScores.find(player->GetGUID());
+    if (itr != PlayerScores.end())
+    {
+        data << uint64(itr->first);
+        data << uint32(itr->second->KillingBlows);
+        data << uint32(itr->second->HonorableKills);
+        data << uint32(itr->second->Deaths);
+        data << uint32(itr->second->BonusHonor);
+        data << uint32(itr->second->DamageDone);              // damage done
+        data << uint32(itr->second->HealingDone);             // healing done
+        data << uint32(0x00000000);
+    }
+    data.put(wpos, scoreCount);
+    player->GetSession()->SendPacket(&data);
 
     WorldPacket data2;
     sBattlegroundMgr->BuildBattlegroundStatusPacket(&data2, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetBgTeamId());
     player->GetSession()->SendPacket(&data2);
 
-	ShowScoreMenu(player);
+    ShowScoreMenu(player);
 }
 
 uint32 BattlegroundAV::GetSurviverCount() const

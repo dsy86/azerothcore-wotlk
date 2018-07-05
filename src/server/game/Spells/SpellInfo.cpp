@@ -2016,12 +2016,12 @@ AuraStateType SpellInfo::LoadAuraState() const
     
     // Any Spells that prevent spells can be added here.
     uint32 StealthPreventionSpellList[] = { 9991, 35331, 9806, 35325 };
-	
+
     // Goes through each of the spells and identifies them as Stealth Prevention Spell.
     for (uint32 i = 0; i < sizeof(StealthPreventionSpellList) / sizeof(uint32); i++) {
         if (Id == StealthPreventionSpellList[i]) {
             return AURA_STATE_FAERIE_FIRE;
-	}
+    }
     }
 
     // Sting (hunter's pet ability)

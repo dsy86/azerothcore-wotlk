@@ -849,7 +849,7 @@ void World::LoadConfigSettings(bool reload)
         m_int_configs[CONFIG_START_ARENA_POINTS] = m_int_configs[CONFIG_MAX_ARENA_POINTS];
     }
 
-	  m_int_configs[CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL] = sConfigMgr->GetIntDefault("RecruitAFriend.MaxLevel", 60);
+      m_int_configs[CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL] = sConfigMgr->GetIntDefault("RecruitAFriend.MaxLevel", 60);
     if (m_int_configs[CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL] > m_int_configs[CONFIG_MAX_PLAYER_LEVEL])
     {
         sLog->outError("RecruitAFriend.MaxLevel (%i) must be in the range 0..MaxLevel(%u). Set to %u.",
@@ -1263,14 +1263,14 @@ void World::LoadConfigSettings(bool reload)
 
     m_int_configs[CONFIG_BIRTHDAY_TIME] = sConfigMgr->GetIntDefault("BirthdayTime", 1222964635);
 
-	// AIO Configs
-	m_int_configs[CONFIG_AIO_MAXPARTS] = sConfigMgr->GetIntDefault("AIO.MaxParts", 4);
-	m_bool_configs[CONFIG_AIO_OBFUSCATE] = sConfigMgr->GetBoolDefault("AIO.Obfuscate", false);
-	m_bool_configs[CONFIG_AIO_COMPRESS] = sConfigMgr->GetBoolDefault("AIO.Compress", false);
-	m_aioclientpath = sConfigMgr->GetStringDefault("AIO.ClientScriptPath", "lua_client_scripts");
-	m_aioprefix = sConfigMgr->GetStringDefault("AIO.Prefix", "AIO");
-	if(m_aioprefix.size() > 15)
-		m_aioprefix = m_aioprefix.substr(0, 15);
+    // AIO Configs
+    m_int_configs[CONFIG_AIO_MAXPARTS] = sConfigMgr->GetIntDefault("AIO.MaxParts", 4);
+    m_bool_configs[CONFIG_AIO_OBFUSCATE] = sConfigMgr->GetBoolDefault("AIO.Obfuscate", false);
+    m_bool_configs[CONFIG_AIO_COMPRESS] = sConfigMgr->GetBoolDefault("AIO.Compress", false);
+    m_aioclientpath = sConfigMgr->GetStringDefault("AIO.ClientScriptPath", "lua_client_scripts");
+    m_aioprefix = sConfigMgr->GetStringDefault("AIO.Prefix", "AIO");
+    if(m_aioprefix.size() > 15)
+        m_aioprefix = m_aioprefix.substr(0, 15);
 
     // call ScriptMgr if we're reloading the configuration
     sScriptMgr->OnAfterConfigLoad(reload);
@@ -3148,185 +3148,185 @@ void World::ProcessQueryCallbacks()
 
 bool World::AddAddon(const AIOAddon &addon)
 {
-	if(addon.file.empty())
-		return false;
+    if(addon.file.empty())
+        return false;
 
-	//Check if addon already exist
-	for(AddonCodeListType::iterator itr = m_AddonList.begin();
-		itr != m_AddonList.end();
-		++itr)
-	{
-		if(itr->name == addon.name)
-		{
-			return false;
-		}
-	}
-	
-	AIOAddon copy(addon);
-	copy.code = "";
+    //Check if addon already exist
+    for(AddonCodeListType::iterator itr = m_AddonList.begin();
+        itr != m_AddonList.end();
+        ++itr)
+    {
+        if(itr->name == addon.name)
+        {
+            return false;
+        }
+    }
+    
+    AIOAddon copy(addon);
+    copy.code = "";
 
-	//Format path
-	std::string path;
-	path = sWorld->GetAIOClientScriptPath();
-	if(path.back() != '/' && path.back() != '\\')
-	{
-		path += '/';
-	}
-	path += copy.file;
+    //Format path
+    std::string path;
+    path = sWorld->GetAIOClientScriptPath();
+    if(path.back() != '/' && path.back() != '\\')
+    {
+        path += '/';
+    }
+    path += copy.file;
 
-	//Get file
-	std::ifstream in(path, std::ios::in | std::ios::binary);
-	if(in)
-	{
-		in.seekg(0, std::ios::end);
-		copy.code.resize(in.tellg());
-		in.seekg(0, std::ios::beg);
-		in.read(&copy.code[0], copy.code.size());
-		in.close();
-		if(copy.code.empty())
-		{
-			return false;
-		}
-	}
-	else
-	{
-		sLog->outAIOMessage("AIO AddAddon: Couldn't open file %s of addon %s", path.c_str(), copy.name.c_str());
-		return false;
-	}
+    //Get file
+    std::ifstream in(path, std::ios::in | std::ios::binary);
+    if(in)
+    {
+        in.seekg(0, std::ios::end);
+        copy.code.resize(in.tellg());
+        in.seekg(0, std::ios::beg);
+        in.read(&copy.code[0], copy.code.size());
+        in.close();
+        if(copy.code.empty())
+        {
+            return false;
+        }
+    }
+    else
+    {
+        sLog->outAIOMessage("AIO AddAddon: Couldn't open file %s of addon %s", path.c_str(), copy.name.c_str());
+        return false;
+    }
 
-	//Set crc on original file content
-	//boost::crc_32_type crc_result;
-	//crc_result.process_bytes(copy.code.data(), copy.code.length());
-	//copy.crc = crc_result.checksum();
+    //Set crc on original file content
+    //boost::crc_32_type crc_result;
+    //crc_result.process_bytes(copy.code.data(), copy.code.length());
+    //copy.crc = crc_result.checksum();
     copy.crc = ACE::crc32(copy.code.data(), copy.code.length());
 
-	//Process code
-	char compressPrefix = 'U';
-// 	if(sWorld->getBoolConfig(CONFIG_AIO_OBFUSCATE))
-// 	{
-// 		//Obf
-// 	}
-// 	if(sWorld->getBoolConfig(CONFIG_AIO_COMPRESS))
-// 	{
-// 		compressPrefix = 'C';
-// 	}
+    //Process code
+    char compressPrefix = 'U';
+//     if(sWorld->getBoolConfig(CONFIG_AIO_OBFUSCATE))
+//     {
+//         //Obf
+//     }
+//     if(sWorld->getBoolConfig(CONFIG_AIO_COMPRESS))
+//     {
+//         compressPrefix = 'C';
+//     }
 
-	//Set final code and go
-	copy.code = std::string(1, compressPrefix) + copy.code;
-	m_AddonList.push_back(copy);
+    //Set final code and go
+    copy.code = std::string(1, compressPrefix) + copy.code;
+    m_AddonList.push_back(copy);
 
-	sLog->outAIOMessage("AIO: Loaded addon %s from file %s", copy.name.c_str(), copy.file.c_str());
-	return true;
+    sLog->outAIOMessage("AIO: Loaded addon %s from file %s", copy.name.c_str(), copy.file.c_str());
+    return true;
 }
 
 uint32 World::RemoveAddon(const std::string &addonName)
 {
-	for(AddonCodeListType::iterator itr = m_AddonList.begin();
-		itr != m_AddonList.end();
-		++itr)
-	{
-		if(itr->name == addonName)
-		{
-			uint32 sec = 3;
-			m_AddonList.erase(itr);
-			return sec;
-		}
-	}
-	return 0;
+    for(AddonCodeListType::iterator itr = m_AddonList.begin();
+        itr != m_AddonList.end();
+        ++itr)
+    {
+        if(itr->name == addonName)
+        {
+            uint32 sec = 3;
+            m_AddonList.erase(itr);
+            return sec;
+        }
+    }
+    return 0;
 }
 
 bool World::ReloadAddons()
 {
-	sLog->outAIOMessage("World::ReloadAddons()");
+    sLog->outAIOMessage("World::ReloadAddons()");
 
-	AddonCodeListType prevAddonList;
-	prevAddonList.swap(m_AddonList);
-	try
-	{
-		for(AddonCodeListType::const_iterator itr = prevAddonList.begin();
-			itr != prevAddonList.end();
-			++itr)
-		{
-			AddAddon(*itr);
-		}
-	}
-	catch(std::exception &e)
-	{
-		sLog->outAIOMessage("AIO: Error reloading addons. Exception: %s", e.what());
-		m_AddonList.swap(prevAddonList);
-		return false;
-	}
-	catch(...)
-	{
-		sLog->outAIOMessage("AIO: Error reloading addons");
-		m_AddonList.swap(prevAddonList);
-		return false;
-	}
-	return true;
+    AddonCodeListType prevAddonList;
+    prevAddonList.swap(m_AddonList);
+    try
+    {
+        for(AddonCodeListType::const_iterator itr = prevAddonList.begin();
+            itr != prevAddonList.end();
+            ++itr)
+        {
+            AddAddon(*itr);
+        }
+    }
+    catch(std::exception &e)
+    {
+        sLog->outAIOMessage("AIO: Error reloading addons. Exception: %s", e.what());
+        m_AddonList.swap(prevAddonList);
+        return false;
+    }
+    catch(...)
+    {
+        sLog->outAIOMessage("AIO: Error reloading addons");
+        m_AddonList.swap(prevAddonList);
+        return false;
+    }
+    return true;
 }
 
 size_t World::PrepareClientAddons(const LuaVal &clientData, LuaVal &addonsTable, LuaVal &cacheTable, Player *forPlayer) const
 {
-	uint32 i = 0;
-	for(AddonCodeListType::const_iterator itr = m_AddonList.begin();
-		itr != m_AddonList.end();
-		++itr)
-	{
-		if(!AccountMgr::IsGMAccount(forPlayer->GetSession()->GetSecurity()))
-			continue;
+    uint32 i = 0;
+    for(AddonCodeListType::const_iterator itr = m_AddonList.begin();
+        itr != m_AddonList.end();
+        ++itr)
+    {
+        if(!AccountMgr::IsGMAccount(forPlayer->GetSession()->GetSecurity()))
+            continue;
 
-		LuaVal CRCVal = clientData.get(itr->name);
-		if(CRCVal == itr->crc)
-		{
-			cacheTable.set(++i, itr->name);
-		}
-		else
-		{
-			LuaVal addonData(TTABLE);
-			addonData.set("name", itr->name);
-			addonData.set("crc", itr->crc);
-			addonData.set("code", itr->code);
-			addonsTable.set(++i, addonData);
-		}
-	}
-	return i;
+        LuaVal CRCVal = clientData.get(itr->name);
+        if(CRCVal == itr->crc)
+        {
+            cacheTable.set(++i, itr->name);
+        }
+        else
+        {
+            LuaVal addonData(TTABLE);
+            addonData.set("name", itr->name);
+            addonData.set("crc", itr->crc);
+            addonData.set("code", itr->code);
+            addonsTable.set(++i, addonData);
+        }
+    }
+    return i;
 }
 
 void World::ForceReloadPlayerAddons()
 {
-	for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-	{
-		if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
-			itr->second->GetPlayer()->ForceReloadAddons();
-	}
+    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
+            itr->second->GetPlayer()->ForceReloadAddons();
+    }
 }
 
 void World::ForceResetPlayerAddons()
 {
-	for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-	{
-		if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
-			itr->second->GetPlayer()->ForceResetAddons();
-	}
+    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
+            itr->second->GetPlayer()->ForceResetAddons();
+    }
 }
 
 void World::AIOMessageAll(AIOMsg &msg)
 {
-	std::string messageStr = msg.dumps();
-	for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-	{
-		if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
-			itr->second->GetPlayer()->SendSimpleAIOMessage(messageStr);
-	}
+    std::string messageStr = msg.dumps();
+    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
+            itr->second->GetPlayer()->SendSimpleAIOMessage(messageStr);
+    }
 }
 
 void World::SendAllSimpleAIOMessage(const std::string &message)
 {
-	for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-	{
-		if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
-			itr->second->GetPlayer()->SendSimpleAIOMessage(message);
-	}
+    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if(itr->second->GetPlayer() && AccountMgr::IsGMAccount(itr->second->GetSecurity()))
+            itr->second->GetPlayer()->SendSimpleAIOMessage(message);
+    }
 }
 
 void World::LoadGlobalPlayerDataStore()
