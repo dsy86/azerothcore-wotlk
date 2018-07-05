@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: http://github.com/azerothcore/azerothcore-wotlk/LICENSE-GPL2
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
@@ -1171,6 +1171,8 @@ void Creature::SelectLevel(bool changelevel)
 
     SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, cInfo->attackpower);
     SetModifierValue(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, cInfo->rangedattackpower);
+
+    sScriptMgr->Creature_SelectLevel(cInfo, this);
 }
 
 float Creature::_GetHealthMod(int32 Rank)
@@ -2699,6 +2701,10 @@ float Creature::GetAggroRange(Unit const* target) const
     // Determines the aggro range for creatures
     // Based on data from wowwiki due to lack of 3.3.5a data
 
+    float aggroRate = sWorld->getRate(RATE_CREATURE_AGGRO);
+    if (aggroRate == 0)
+        return 0.0f;
+
     uint32 targetLevel = target->getLevelForTarget(this);
     uint32 myLevel = getLevelForTarget(target);
     int32 levelDiff = int32(targetLevel) - int32(myLevel);
@@ -2729,7 +2735,7 @@ float Creature::GetAggroRange(Unit const* target) const
     if (aggroRadius < minRange)
         aggroRadius = minRange;
 
-    return aggroRadius;
+    return (aggroRadius * aggroRate);
 }
 
 void Creature::SetObjectScale(float scale)

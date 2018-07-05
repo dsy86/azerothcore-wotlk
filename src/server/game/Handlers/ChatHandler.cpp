@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: http://github.com/azerothcore/azerothcore-wotlk/LICENSE-GPL2
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
@@ -143,13 +143,14 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recvData)
 
                 if (sWorld->getBoolConfig(CONFIG_CHATLOG_ADDON))
                 {
-                    std::string msg = "";
-                    recvData >> msg;
+                    std::string to, msg;
+                    recvData >> to >> msg;
+                    Player* receiver = ObjectAccessor::FindPlayerByName(to, false); 
 
                     if (msg.empty())
                         return;
 
-                    sScriptMgr->OnPlayerChat(sender, uint32(CHAT_MSG_ADDON), lang, msg);
+                    sScriptMgr->OnPlayerChat(sender, type, lang, msg, receiver);
                 }
 
                 break;

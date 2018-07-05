@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: http://github.com/azerothcore/azerothcore-wotlk/LICENSE-GPL2
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
@@ -22,6 +22,40 @@
 #include "WorldPacket.h"
 #include "Chat.h"
 #include "smallfolk_cpp/smallfolk.h"
+
+// Specialize for each script type class like so:
+template class ScriptRegistry<SpellScriptLoader>;
+template class ScriptRegistry<ServerScript>;
+template class ScriptRegistry<WorldScript>;
+template class ScriptRegistry<FormulaScript>;
+template class ScriptRegistry<WorldMapScript>;
+template class ScriptRegistry<InstanceMapScript>;
+template class ScriptRegistry<BattlegroundMapScript>;
+template class ScriptRegistry<ItemScript>;
+template class ScriptRegistry<CreatureScript>;
+template class ScriptRegistry<GameObjectScript>;
+template class ScriptRegistry<AreaTriggerScript>;
+template class ScriptRegistry<BattlegroundScript>;
+template class ScriptRegistry<OutdoorPvPScript>;
+template class ScriptRegistry<CommandScript>;
+template class ScriptRegistry<WeatherScript>;
+template class ScriptRegistry<AuctionHouseScript>;
+template class ScriptRegistry<ConditionScript>;
+template class ScriptRegistry<VehicleScript>;
+template class ScriptRegistry<DynamicObjectScript>;
+template class ScriptRegistry<TransportScript>;
+template class ScriptRegistry<AchievementCriteriaScript>;
+template class ScriptRegistry<PlayerScript>;
+template class ScriptRegistry<GuildScript>;
+template class ScriptRegistry<GroupScript>;
+template class ScriptRegistry<GlobalScript>;
+template class ScriptRegistry<UnitScript>;
+template class ScriptRegistry<AllCreatureScript>;
+template class ScriptRegistry<AllMapScript>;
+template class ScriptRegistry<MovementHandlerScript>;
+template class ScriptRegistry<AIOScript>;
+
+#include "ScriptMgrMacros.h"
 
 // This is the global static registry of scripts.
 /*template<class TScript>
@@ -120,35 +154,6 @@ class ScriptRegistry
         static uint32 _scriptIdCounter;
 };*/
 
-// Utility macros to refer to the script registry.
-#define SCR_REG_MAP(T) ScriptRegistry<T>::ScriptMap
-#define SCR_REG_ITR(T) ScriptRegistry<T>::ScriptMapIterator
-#define SCR_REG_LST(T) ScriptRegistry<T>::ScriptPointerList
-
-// Utility macros for looping over scripts.
-#define FOR_SCRIPTS(T, C, E) \
-    if (!SCR_REG_LST(T).empty()) \
-        for (SCR_REG_ITR(T) C = SCR_REG_LST(T).begin(); \
-            C != SCR_REG_LST(T).end(); ++C)
-#define FOR_SCRIPTS_RET(T, C, E, R) \
-    if (SCR_REG_LST(T).empty()) \
-        return R; \
-    for (SCR_REG_ITR(T) C = SCR_REG_LST(T).begin(); \
-        C != SCR_REG_LST(T).end(); ++C)
-#define FOREACH_SCRIPT(T) \
-    FOR_SCRIPTS(T, itr, end) \
-    itr->second
-
-// Utility macros for finding specific scripts.
-#define GET_SCRIPT(T, I, V) \
-    T* V = ScriptRegistry<T>::GetScriptById(I); \
-    if (!V) \
-        return;
-#define GET_SCRIPT_RET(T, I, V, R) \
-    T* V = ScriptRegistry<T>::GetScriptById(I); \
-    if (!V) \
-        return R;
-
 ScriptMgr::ScriptMgr()
     : _scriptCount(0), _scheduledScripts(0), _aioHandlers(0)
 {
@@ -197,7 +202,9 @@ void ScriptMgr::Unload()
     SCR_CLEAR(PlayerScript);
     SCR_CLEAR(GuildScript);
     SCR_CLEAR(GroupScript);
-    SCR_CLEAR(AIOScript);
+    SCR_CLEAR(GlobalScript);
+    SCR_CLEAR(ModuleScript);
+	SCR_CLEAR(AIOScript);
 
     #undef SCR_CLEAR
 }
@@ -1536,6 +1543,11 @@ void ScriptMgr::OnAfterInitializeLockedDungeons(Player* player)
     FOREACH_SCRIPT(GlobalScript)->OnAfterInitializeLockedDungeons(player);
 }
 
+void ScriptMgr::OnAfterUpdateEncounterState(Map* map, EncounterCreditType type, uint32 creditEntry, Unit* source, Difficulty difficulty_fixed, DungeonEncounterList const* encounters, uint32 dungeonCompleted, bool updated) 
+{
+    FOREACH_SCRIPT(GlobalScript)->OnAfterUpdateEncounterState(map, type, creditEntry, source, difficulty_fixed, encounters, dungeonCompleted, updated);
+}
+
 uint32 ScriptMgr::DealDamage(Unit* AttackerUnit, Unit *pVictim, uint32 damage, DamageEffectType damagetype)
 {
     FOR_SCRIPTS_RET(UnitScript, itr, end, damage)
@@ -1802,6 +1814,12 @@ GlobalScript::GlobalScript(const char* name)
     ScriptRegistry<GlobalScript>::AddScript(this);
 }
 
+ModuleScript::ModuleScript(const char* name)
+    : ScriptObject(name)
+{
+    ScriptRegistry<ModuleScript>::AddScript(this);
+}
+
 AIOScript::AIOScriptByKeyMap AIOScript::_scriptByKeyMap = AIOScript::AIOScriptByKeyMap();
 
 void ScriptMgr::OnAddonMessage(Player *sender, const std::string &message)
@@ -1990,51 +2008,3 @@ void AIOHandlers::HandleError(Player *sender, const LuaVal &args)
 
     sLog->outAIOMessage("%s Received client addon error: %s", sender->GetSession()->GetPlayerInfo().c_str(), msgVal.str().c_str());
 }
-
-
-// Instantiate static members of ScriptRegistry.
-template<class TScript> std::map<uint32, TScript*> ScriptRegistry<TScript>::ScriptPointerList;
-template<class TScript> std::vector<TScript*> ScriptRegistry<TScript>::ALScripts;
-template<class TScript> uint32 ScriptRegistry<TScript>::_scriptIdCounter = 0;
-
-// Specialize for each script type class like so:
-template class ScriptRegistry<SpellScriptLoader>;
-template class ScriptRegistry<ServerScript>;
-template class ScriptRegistry<WorldScript>;
-template class ScriptRegistry<FormulaScript>;
-template class ScriptRegistry<WorldMapScript>;
-template class ScriptRegistry<InstanceMapScript>;
-template class ScriptRegistry<BattlegroundMapScript>;
-template class ScriptRegistry<ItemScript>;
-template class ScriptRegistry<CreatureScript>;
-template class ScriptRegistry<GameObjectScript>;
-template class ScriptRegistry<AreaTriggerScript>;
-template class ScriptRegistry<BattlegroundScript>;
-template class ScriptRegistry<OutdoorPvPScript>;
-template class ScriptRegistry<CommandScript>;
-template class ScriptRegistry<WeatherScript>;
-template class ScriptRegistry<AuctionHouseScript>;
-template class ScriptRegistry<ConditionScript>;
-template class ScriptRegistry<VehicleScript>;
-template class ScriptRegistry<DynamicObjectScript>;
-template class ScriptRegistry<TransportScript>;
-template class ScriptRegistry<AchievementCriteriaScript>;
-template class ScriptRegistry<PlayerScript>;
-template class ScriptRegistry<GuildScript>;
-template class ScriptRegistry<GroupScript>;
-template class ScriptRegistry<GlobalScript>;
-template class ScriptRegistry<UnitScript>;
-template class ScriptRegistry<AllCreatureScript>;
-template class ScriptRegistry<AllMapScript>;
-template class ScriptRegistry<MovementHandlerScript>;
-template class ScriptRegistry<AIOScript>;
-
-// Undefine utility macros.
-#undef GET_SCRIPT_RET
-#undef GET_SCRIPT
-#undef FOREACH_SCRIPT
-#undef FOR_SCRIPTS_RET
-#undef FOR_SCRIPTS
-#undef SCR_REG_LST
-#undef SCR_REG_ITR
-#undef SCR_REG_MAP

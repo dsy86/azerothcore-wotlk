@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: http://github.com/azerothcore/azerothcore-wotlk/LICENSE-GPL2
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
@@ -205,7 +205,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket & /*recvData*/)
 
         // Delete the money loot record from the DB
         if (loot->containerId > 0)
-            sLootItemStorage->RemoveStoredLootMoney(loot->containerId);
+            sLootItemStorage->RemoveStoredLootMoney(loot->containerId, loot);
 
         // Delete container if empty
         if (loot->isLooted() && IS_ITEM_GUID(guid))

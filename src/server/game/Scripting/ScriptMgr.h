@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: http://github.com/azerothcore/azerothcore-wotlk/LICENSE-GPL2
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
@@ -773,8 +773,8 @@ class PlayerScript : public ScriptObject
         // Called when a player is killed by a creature
         virtual void OnPlayerKilledByCreature(Creature* /*killer*/, Player* /*killed*/) { }
 
-        // Called when a player's level changes (right before the level is applied)
-        virtual void OnLevelChanged(Player* /*player*/, uint8 /*newLevel*/) { }
+        // Called when a player's level changes (right after the level is applied)
+        virtual void OnLevelChanged(Player* /*player*/, uint8 /*oldlevel*/) { }
 
         // Called when a player's free talent points change (right before the change is applied)
         virtual void OnFreeTalentPointsChanged(Player* /*player*/, uint32 /*points*/) { }
@@ -1186,6 +1186,18 @@ class GlobalScript : public ScriptObject
        
         // On Before arena points distribution
         virtual void OnBeforeUpdateArenaPoints(ArenaTeam* /*at*/, std::map<uint32, uint32> & /*ap*/) { }
+        
+        // Called when a dungeon encounter is updated.
+        virtual void OnAfterUpdateEncounterState(Map* /*map*/, EncounterCreditType /*type*/,  uint32 /*creditEntry*/, Unit* /*source*/, Difficulty /*difficulty_fixed*/, DungeonEncounterList const* /*encounters*/, uint32 /*dungeonCompleted*/, bool /*updated*/) { }
+};
+
+// this class can be used to be extended by Modules
+// creating their own custom hooks inside module itself
+class ModuleScript : public ScriptObject
+{
+    protected:
+
+        ModuleScript(const char* name);
 };
 
 // Placed here due to ScriptRegistry::AddScript dependency.
@@ -1456,6 +1468,7 @@ class ScriptMgr
         void OnItemRoll(Player const* player, LootStoreItem const* LootStoreItem, float &chance, Loot& loot, LootStore const& store);
         void OnInitializeLockedDungeons(Player* player, uint8& level, uint32& lockData);
         void OnAfterInitializeLockedDungeons(Player* player);
+        void OnAfterUpdateEncounterState(Map* map, EncounterCreditType type, uint32 creditEntry, Unit* source, Difficulty difficulty_fixed, DungeonEncounterList const* encounters, uint32 dungeonCompleted, bool updated);
 
 
     public: /* Scheduled scripts */
@@ -1636,5 +1649,10 @@ class ScriptRegistry
         // Counter used for code-only scripts.
         static uint32 _scriptIdCounter;
 };
+
+// Instantiate static members of ScriptRegistry.
+template<class TScript> std::map<uint32, TScript*> ScriptRegistry<TScript>::ScriptPointerList;
+template<class TScript> std::vector<TScript*> ScriptRegistry<TScript>::ALScripts;
+template<class TScript> uint32 ScriptRegistry<TScript>::_scriptIdCounter = 0;
 
 #endif

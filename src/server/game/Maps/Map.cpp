@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: http://github.com/azerothcore/azerothcore-wotlk/LICENSE-GPL2
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
@@ -815,8 +815,8 @@ void Map::RemovePlayerFromMap(Player* player, bool remove)
 
     if (remove)
     {
-        DeleteFromWorld(player);
         sScriptMgr->OnPlayerLeaveMap(this, player);
+        DeleteFromWorld(player);
     }
 }
 
@@ -3090,6 +3090,7 @@ void Map::UpdateEncounterState(EncounterCreditType type, uint32 creditEntry, Uni
         return;
 
     uint32 dungeonId = 0;
+    bool updated = false;
 
     for (DungeonEncounterList::const_iterator itr = encounters->begin(); itr != encounters->end(); ++itr)
     {
@@ -3097,8 +3098,12 @@ void Map::UpdateEncounterState(EncounterCreditType type, uint32 creditEntry, Uni
         if (encounter->creditType == type && encounter->creditEntry == creditEntry)
         {
             if (source)
-                if (InstanceScript* instanceScript = source->GetInstanceScript())
+                if (InstanceScript* instanceScript = source->GetInstanceScript()) {
+                    uint32 prevMask = instanceScript->GetCompletedEncounterMask();
                     instanceScript->SetCompletedEncountersMask((1 << encounter->dbcEntry->encounterIndex)|instanceScript->GetCompletedEncounterMask(), true);
+                    if (prevMask != instanceScript->GetCompletedEncounterMask())
+                        updated = true;
+                }
 
             if (encounter->lastEncounterDungeon)
             {
@@ -3110,6 +3115,8 @@ void Map::UpdateEncounterState(EncounterCreditType type, uint32 creditEntry, Uni
 
     // pussywizard:
     LogEncounterFinished(type, creditEntry);
+    
+    sScriptMgr->OnAfterUpdateEncounterState(this, type, creditEntry, source, difficulty_fixed, encounters, dungeonId, updated);
 
     if (dungeonId)
     {
