@@ -11,7 +11,7 @@
 #include "Common.h"
 #include "DatabaseEnv.h"
 #include "Config.h"
-#include "SystemConfig.h"
+#include "GitRevision.h"
 #include "Log.h"
 #include "Opcodes.h"
 #include "WorldSession.h"
@@ -76,6 +76,9 @@
 #include "AsyncAuctionListing.h"
 #include "SavingSystem.h"
 #include <VMapManager2.h>
+#ifdef ELUNA
+#include "LuaEngine.h"
+#endif
 
 #include <fstream>
 #include "smallfolk_cpp/smallfolk.h"
@@ -1296,6 +1299,21 @@ void World::SetInitialWorldSettings()
         vmmgr2->GetLiquidFlagsPtr = &GetLiquidFlags;
     }
 
+#ifdef ELUNA
+    ///- Initialize Lua Engine
+    sLog->outString("Initialize Eluna Lua Engine...");
+
+    std::string conf_path = _CONF_DIR;
+    std::string cfg_file = conf_path + "/mod_LuaEngine.conf";
+#ifdef WIN32
+    cfg_file = "mod_LuaEngine.conf";
+#endif
+    std::string cfg_def_file = cfg_file + ".dist";
+    sConfigMgr->LoadMore(cfg_def_file.c_str());
+    sConfigMgr->LoadMore(cfg_file.c_str());
+    Eluna::Initialize();
+#endif
+
     ///- Initialize config settings
     LoadConfigSettings();
 
@@ -1777,7 +1795,7 @@ void World::SetInitialWorldSettings()
     m_startTime = m_gameTime;
 
     LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, uptime, revision) VALUES(%u, %u, 0, '%s')",
-                            realmID, uint32(m_startTime), _FULLVERSION);       // One-time query
+                            realmID, uint32(m_startTime), GitRevision::GetFullVersion());       // One-time query
 
 
 
@@ -1881,6 +1899,13 @@ void World::SetInitialWorldSettings()
     mgr = ChannelMgr::forTeam(TEAM_HORDE);
     mgr->LoadChannels();
 
+#ifdef ELUNA
+    ///- Run eluna scripts.
+    // in multithread foreach: run scripts
+    sEluna->RunScripts();
+    sEluna->OnConfigLoad(false,false); // Must be done after Eluna is initialized and scripts have run.
+#endif
+    
     uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
     sLog->outString();
     sLog->outError("WORLD: World initialized in %u minutes %u seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
@@ -3187,7 +3212,7 @@ bool World::AddAddon(const AIOAddon &addon)
     }
     else
     {
-        sLog->outAIOMessage("AIO AddAddon: Couldn't open file %s of addon %s", path.c_str(), copy.name.c_str());
+        sLog->outAIOMessage(0, LOG_TYPE_ERROR, "AIO AddAddon: Couldn't open file %s of addon %s", path.c_str(), copy.name.c_str());
         return false;
     }
 
@@ -3196,6 +3221,7 @@ bool World::AddAddon(const AIOAddon &addon)
     //crc_result.process_bytes(copy.code.data(), copy.code.length());
     //copy.crc = crc_result.checksum();
     copy.crc = ACE::crc32(copy.code.data(), copy.code.length());
+    sLog->outAIOMessage(0, LOG_TYPE_BASIC, "AIO AddAddon: The crc result of addon %s is: %d", copy.name.c_str(), copy.crc);
 
     //Process code
     char compressPrefix = 'U';
@@ -3212,7 +3238,7 @@ bool World::AddAddon(const AIOAddon &addon)
     copy.code = std::string(1, compressPrefix) + copy.code;
     m_AddonList.push_back(copy);
 
-    sLog->outAIOMessage("AIO: Loaded addon %s from file %s", copy.name.c_str(), copy.file.c_str());
+    sLog->outAIOMessage(0, LOG_TYPE_DETAIL, "AIO: Loaded addon %s from file %s", copy.name.c_str(), copy.file.c_str());
     return true;
 }
 
@@ -3234,7 +3260,7 @@ uint32 World::RemoveAddon(const std::string &addonName)
 
 bool World::ReloadAddons()
 {
-    sLog->outAIOMessage("World::ReloadAddons()");
+    sLog->outAIOMessage(0, LOG_TYPE_DETAIL, "World::ReloadAddons()");
 
     AddonCodeListType prevAddonList;
     prevAddonList.swap(m_AddonList);
@@ -3249,13 +3275,13 @@ bool World::ReloadAddons()
     }
     catch(std::exception &e)
     {
-        sLog->outAIOMessage("AIO: Error reloading addons. Exception: %s", e.what());
+        sLog->outAIOMessage(0, LOG_TYPE_ERROR, "AIO: Error reloading addons. Exception: %s", e.what());
         m_AddonList.swap(prevAddonList);
         return false;
     }
     catch(...)
     {
-        sLog->outAIOMessage("AIO: Error reloading addons");
+        sLog->outAIOMessage(0, LOG_TYPE_ERROR, "AIO: Error reloading addons");
         m_AddonList.swap(prevAddonList);
         return false;
     }

@@ -222,6 +222,14 @@ class ServerScript : public ScriptObject
         // Called when a socket is closed. Do not store the socket object, and do not rely on the connection
         // being open; it is not.
         virtual void OnSocketClose(WorldSocket* /*socket*/, bool /*wasNew*/) { }
+
+        // Called when a packet is sent to a client. The packet object is a copy of the original packet, so reading
+        // and modifying it is safe.
+        virtual void OnPacketSend(WorldSession* /*session*/, WorldPacket& /*packet*/) { }
+
+        // Called when a (valid) packet is received by a client. The packet object is a copy of the original packet, so
+        // reading and modifying it is safe. Make sure to check WorldSession pointer before usage, it might be null in case of auth packets
+        virtual void OnPacketReceive(WorldSession* /*session*/, WorldPacket& /*packet*/) { }
 };
 
 class WorldScript : public ScriptObject
@@ -411,6 +419,9 @@ class ItemScript : public ScriptObject
         // Called when a player uses the item.
         virtual bool OnUse(Player* /*player*/, Item* /*item*/, SpellCastTargets const& /*targets*/) { return false; }
 
+        // Called when the item is destroyed.
+        virtual bool OnRemove(Player* /*player*/, Item* /*item*/) { return false; }
+
         // Called when the item expires (is destroyed).
         virtual bool OnExpire(Player* /*player*/, ItemTemplate const* /*proto*/) { return false; }
 
@@ -435,6 +446,7 @@ public:
     virtual void OnDamage(Unit* /*attacker*/, Unit* /*victim*/, uint32& /*damage*/) { }
 
     // Called when DoT's Tick Damage is being Dealt
+    // Attacker can be NULL if he is despawned while the aura still exists on target
     virtual void ModifyPeriodicDamageAurasTick(Unit* /*target*/, Unit* /*attacker*/, uint32& /*damage*/) { }
 
     // Called when Melee Damage is being Dealt
@@ -770,6 +782,9 @@ class PlayerScript : public ScriptObject
         // Called when a player kills a creature
         virtual void OnCreatureKill(Player* /*killer*/, Creature* /*killed*/) { }
 
+        // Called when a player's pet kills a creature
+        virtual void OnCreatureKilledByPet(Player* /*PetOwner*/, Creature* /*killed*/) { }
+
         // Called when a player is killed by a creature
         virtual void OnPlayerKilledByCreature(Creature* /*killer*/, Player* /*killed*/) { }
 
@@ -836,6 +851,9 @@ class PlayerScript : public ScriptObject
 
         // Called when a player is deleted.
         virtual void OnDelete(uint64 /*guid*/) { }
+
+        // Called when a player is about to be saved.
+        virtual void OnSave(Player* /*player*/) { }
 
         // Called when a player is bound to an instance
         virtual void OnBindToInstance(Player* /*player*/, Difficulty /*difficulty*/, uint32 /*mapId*/, bool /*permanent*/) { }
@@ -1191,6 +1209,29 @@ class GlobalScript : public ScriptObject
         virtual void OnAfterUpdateEncounterState(Map* /*map*/, EncounterCreditType /*type*/,  uint32 /*creditEntry*/, Unit* /*source*/, Difficulty /*difficulty_fixed*/, DungeonEncounterList const* /*encounters*/, uint32 /*dungeonCompleted*/, bool /*updated*/) { }
 };
 
+class BGScript : public ScriptObject
+{
+protected:
+
+    BGScript(const char* name);
+
+public:
+
+    bool IsDatabaseBound() const { return false; }
+
+    // Start Battlegroud
+    virtual void OnBattlegroundStart(Battleground* /*bg*/) { }
+
+    // End Battleground
+    virtual void OnBattlegroundEndReward(Battleground* /*bg*/, Player* /*player*/, TeamId /*winnerTeamId*/) { }
+
+    // Update Battlegroud
+    virtual void OnBattlegroundUpdate(Battleground* /*bg*/, uint32 /*diff*/) { }
+
+    // Add Player in Battlegroud
+    virtual void OnBattlegroundAddPlayer(Battleground* /*bg*/, Player* /*player*/) { }
+};
+
 // this class can be used to be extended by Modules
 // creating their own custom hooks inside module itself
 class ModuleScript : public ScriptObject
@@ -1243,6 +1284,8 @@ class ScriptMgr
         void OnNetworkStop();
         void OnSocketOpen(WorldSocket* socket);
         void OnSocketClose(WorldSocket* socket, bool wasNew);
+        void OnPacketReceive(WorldSession* session, WorldPacket const& packet);
+        void OnPacketSend(WorldSession* session, WorldPacket const& packet);
 
     public: /* WorldScript */
 
@@ -1286,6 +1329,7 @@ class ScriptMgr
         bool OnQuestAccept(Player* player, Item* item, Quest const* quest);
         bool OnItemUse(Player* player, Item* item, SpellCastTargets const& targets);
         bool OnItemExpire(Player* player, ItemTemplate const* proto);
+        bool OnItemRemove(Player* player, Item* item);
         void OnGossipSelect(Player* player, Item* item, uint32 sender, uint32 action);
         void OnGossipSelectCode(Player* player, Item* item, uint32 sender, uint32 action, const char* code);
 
@@ -1382,6 +1426,7 @@ class ScriptMgr
         void OnPlayerReleasedGhost(Player* player);
         void OnPVPKill(Player* killer, Player* killed);
         void OnCreatureKill(Player* killer, Creature* killed);
+        void OnCreatureKilledByPet(Player* petOwner, Creature* killed);
         void OnPlayerKilledByCreature(Creature* killer, Player* killed);
         void OnPlayerLevelChanged(Player* player, uint8 oldLevel);
         void OnPlayerFreeTalentPointsChanged(Player* player, uint32 newPoints);
@@ -1404,6 +1449,7 @@ class ScriptMgr
         void OnPlayerLoadFromDB(Player* player);
         void OnPlayerLogout(Player* player);
         void OnPlayerCreate(Player* player);
+        void OnPlayerSave(Player* player);
         void OnPlayerDelete(uint64 guid);
         void OnPlayerBindToInstance(Player* player, Difficulty difficulty, uint32 mapid, bool permanent);
         void OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 newArea);
@@ -1505,6 +1551,13 @@ class ScriptMgr
         //listener functions are called by OnPlayerEnterMap and OnPlayerLeaveMap
         //void OnPlayerEnterAll(Map* map, Player* player);
         //void OnPlayerLeaveAll(Map* map, Player* player);
+
+    public: /* BGScript */
+
+        void OnBattlegroundStart(Battleground* bg);
+        void OnBattlegroundEndReward(Battleground* bg, Player* player, TeamId winnerTeamId);
+        void OnBattlegroundUpdate(Battleground* bg, uint32 diff);
+        void OnBattlegroundAddPlayer(Battleground* bg, Player* player);
 
     public: /* AIOScript */
 

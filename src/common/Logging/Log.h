@@ -128,7 +128,7 @@ class Log
         void outRemote(const char * str, ...)                   ATTR_PRINTF(2, 3);
         void outSQLDriver(const char* str, ...)                 ATTR_PRINTF(2, 3);
         void outMisc(const char * str, ...)                     ATTR_PRINTF(2, 3); // pussywizard
-        void outAIOMessage(const char * str, ...)               ATTR_PRINTF(2, 3);
+        void outAIOMessage(uint32 account, LogTypes type, const char * str, ...)               ATTR_PRINTF(4, 5);
         void outCharDump(const char * str, uint32 account_id, uint32 guid, const char * name);
 
         static void outTimestamp(FILE* file);

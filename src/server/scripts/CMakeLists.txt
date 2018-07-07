@@ -49,6 +49,7 @@ if(SCRIPTS)
   include(Northrend/CMakeLists.txt)
   include(Events/CMakeLists.txt)
   include(Pet/CMakeLists.txt)
+  include(AIO/CMakeLists.txt)
 endif()
 
 if(EXISTS "${AC_SCRIPTS_DIR}/Custom/CMakeLists.txt")
