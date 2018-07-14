@@ -1,4 +1,4 @@
-ï»¿/*
+/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -930,6 +930,10 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
     m_applyResilience = true;
 
 
+    m_aioInitialized = false;
+    m_aioInitCd = false;
+    m_aioInitTimer = 0;
+    m_messageIdIndex = 1;
 }
 
 Player::~Player()
@@ -1935,6 +1939,17 @@ void Player::Update(uint32 p_time)
         m_delayed_unit_relocation_timer = 0;
         RemoveFromNotify(NOTIFY_VISIBILITY_CHANGED);
     }
+
+    //AIO Init cooldown
+    if(m_aioInitCd)
+    {
+        m_aioInitTimer += p_time;
+        if(m_aioInitTimer>= 5000)
+        {
+            m_aioInitCd = false;
+            m_aioInitTimer = 0;
+        }
+    }
 }
 
 void Player::setDeathState(DeathState s, bool /*despawn = false*/)
@@ -2045,7 +2060,6 @@ void Player::SendSimpleAIOMessage(const std::string &message)
         GetSession()->SendPacket(&data);
         return;
     }
-
     //If its a long message
     uint16 parts = std::ceilf(float(shortMsgLen + 4) / 2600);
 
@@ -2601,7 +2615,7 @@ void Player::ProcessDelayedOperations()
         if (HasAura(26013))
         {
             Aura *aura = GetAura(26013);
-            aura->SetDuration(5 * MINUTE*IN_MILLISECONDS);//ÌÓÍöÕßÊ±¼ä¸Ä³É5·ÖÖÓ
+            aura->SetDuration(5 * MINUTE*IN_MILLISECONDS);
         }
     }
 

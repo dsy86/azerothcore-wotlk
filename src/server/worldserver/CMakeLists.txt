@@ -136,6 +136,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/server/game/Weather
   ${CMAKE_SOURCE_DIR}/src/server/game/World
   ${CMAKE_SOURCE_DIR}/src/server/game/Misc
+  ${CMAKE_SOURCE_DIR}/src/server/game/Dsy
   ${CMAKE_SOURCE_DIR}/src/server/scripts/PrecompiledHeaders
   ${CMAKE_SOURCE_DIR}/src/server/authserver/Server
   ${CMAKE_SOURCE_DIR}/src/server/authserver/Realms

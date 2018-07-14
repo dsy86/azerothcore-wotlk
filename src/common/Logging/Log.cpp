@@ -1021,10 +1021,8 @@ void Log::outAIOMessage(uint32 playerGuid, LogTypes type, const char * str, ...)
         return;
 
     if (playerGuid)
-        str = (str + string(", Player GUID: ") + std::to_string(playerGuid)).c_str();
+        str = (str + std::string(", Player GUID: ") + std::to_string(playerGuid)).c_str();
 
-    aioLogFile = openLogFile("AioLogFile", "AioLogTimestamp", "a");
-	
     if (m_enableLogDB)
     {
         va_list ap2;
@@ -1048,6 +1046,8 @@ void Log::outAIOMessage(uint32 playerGuid, LogTypes type, const char * str, ...)
         ResetColor(false);
 
     fprintf(stderr, "\n");
+
+    aioLogFile = openLogFile("AioLogFile", "AioLogTimestamp", "a");
 
     if (aioLogFile)
     {

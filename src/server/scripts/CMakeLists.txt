@@ -176,6 +176,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/server/game/World
   ${CMAKE_SOURCE_DIR}/src/server/game/ArenaSpectator
   ${CMAKE_SOURCE_DIR}/src/server/game/Misc
+  ${CMAKE_SOURCE_DIR}/src/server/game/Dsy
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/PrecompiledHeaders
   ${ACE_INCLUDE_DIR}

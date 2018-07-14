@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -2633,6 +2633,9 @@ class Player : public Unit, public GridObject<Player>
         const PlayerTalentMap& GetTalentMap() const { return m_talents; }
         uint32 GetNextSave() const { return m_nextSave; }
         SpellModList const& GetSpellModList(uint32 type) const { return m_spellMods[type]; }
+
+        void SendMsgHint(std::string msg, bool posstive = true);
+        void SendErrorMsgHint(std::string msg);
 
     protected:
         // Gamemaster whisper whitelist

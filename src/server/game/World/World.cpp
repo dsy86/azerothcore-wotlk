@@ -3217,9 +3217,6 @@ bool World::AddAddon(const AIOAddon &addon)
     }
 
     //Set crc on original file content
-    //boost::crc_32_type crc_result;
-    //crc_result.process_bytes(copy.code.data(), copy.code.length());
-    //copy.crc = crc_result.checksum();
     copy.crc = ACE::crc32(copy.code.data(), copy.code.length());
     sLog->outAIOMessage(0, LOG_TYPE_BASIC, "AIO AddAddon: The crc result of addon %s is: %d", copy.name.c_str(), copy.crc);
 

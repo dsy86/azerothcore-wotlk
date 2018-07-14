@@ -15,4 +15,6 @@ set(scripts_STAT_SRCS
   ${sources_AIO}
 )
 
+AC_ADD_SCRIPT_LOADER("AIO" "ScriptLoader.h")
+
 message("-> Prepared: AIO Scripts")

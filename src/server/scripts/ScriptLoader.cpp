@@ -29,7 +29,6 @@ void AddSC_account_commandscript();
 void AddSC_achievement_commandscript();
 void AddSC_ban_commandscript();
 void AddSC_bf_commandscript();
-void AddSC_caio_commandscript();
 void AddSC_cast_commandscript();
 void AddSC_character_commandscript();
 void AddSC_debug_commandscript();
@@ -59,7 +58,6 @@ void AddSC_tele_commandscript();
 void AddSC_ticket_commandscript();
 void AddSC_titles_commandscript();
 void AddSC_wp_commandscript();
-void AddSC_caio_commandscript();
 
 #ifdef SCRIPTS
 //world
@@ -579,6 +577,9 @@ void AddSC_outdoorpvp_gh();
 void AddSC_chat_log();
 void AddSC_character_creation();
 
+// Aio Scripts
+void AddSC_caio_commandscript();
+
 #endif
 
 void AddSpellScripts()
@@ -606,7 +607,6 @@ void AddCommandScripts()
     AddSC_achievement_commandscript();
     AddSC_ban_commandscript();
     AddSC_bf_commandscript();
-    AddSC_caio_commandscript();
     AddSC_cast_commandscript();
     AddSC_character_commandscript();
     AddSC_debug_commandscript();
