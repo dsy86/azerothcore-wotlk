@@ -99,6 +99,11 @@ void GroupMgr::LoadGroups()
             //  10         11          12         13              14                  15            16        17          18
             ", g.icon7, g.icon8, g.groupType, g.difficulty, g.raidDifficulty, g.masterLooterGuid, g.guid, lfg.dungeon, lfg.state FROM groups g LEFT JOIN lfg_data lfg ON lfg.guid = g.guid ORDER BY g.guid ASC");
 
+        //                                            0              1           2             3                 4      5          6      7         8       9
+        result = CharacterDatabase.Query("SELECT g.leaderGuid, g.lootMethod, g.looterGuid, g.lootThreshold, g.icon1, g.icon2, g.icon3, g.icon4, g.icon5, g.icon6"
+            //  10         11          12         13              14                  15            16        17          18      19
+            ", g.icon7, g.icon8, g.groupType, g.difficulty, g.raidDifficulty, g.masterLooterGuid, g.guid, lfg.dungeon, lfg.state, diff.difficulty FROM groups g LEFT JOIN lfg_data lfg ON lfg.guid = g.guid LEFT JOIN _difficulty diff ON diff.guid = g.guid AND diff.playerOrGroup = 1 ORDER BY g.guid ASC");
+
         if (!result)
         {
             sLog->outString(">> Loaded 0 group definitions. DB table `groups` is empty!");

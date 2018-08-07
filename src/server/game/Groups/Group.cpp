@@ -141,6 +141,10 @@ bool Group::Create(Player* leader)
 
         CharacterDatabase.Execute(stmt);
 
+        PreparedStatement* stmt2= CharacterDatabase.GetPreparedStatement(CHAR_REP_GROUP_DIFFICULTY);
+        stmt2->setUInt32(0, lowguid);
+        stmt2->setUInt32(1, leader->GetSelectedDifficulty());
+        CharacterDatabase.Execute(stmt2);
 
         ASSERT(AddMember(leader)); // If the leader can't be added to a new group because it appears full, something is clearly wrong.
     }
@@ -201,6 +205,8 @@ bool Group::LoadGroupFromDB(Field* fields)
     if (m_groupType & GROUPTYPE_LFG)
         sLFGMgr->_LoadFromDB(fields, GetGUID());
 
+    // dsy: add custom difficulty
+    m_selectedDifficulty = fields[19].GetUInt32();
     return true;
 }
 

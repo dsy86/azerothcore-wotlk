@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -52,6 +52,7 @@
 #include "ArenaSpectator.h"
 #include "DynamicVisibility.h"
 #include "AccountMgr.h"
+#include "LegendLevel.h"
 
 #ifdef ELUNA
 #include "LuaEngine.h"
@@ -1690,6 +1691,12 @@ uint32 Unit::CalcArmorReducedDamage(Unit const* attacker, Unit const* victim, co
         tmpvalue = 0.0f;
     if (tmpvalue > 0.75f)
         tmpvalue = 0.75f;
+
+    if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
+    {
+        float armorLimit = sWorld->getFloatConfig(CONFIG_STATS_LIMITS_ARMOR) / 100.0f;
+        tmpvalue = tmpvalue > armorLimit ? armorLimit : tmpvalue;
+    }
 
     newdamage = uint32(damage - (damage * tmpvalue));
 
@@ -9233,7 +9240,7 @@ ReputationRank Unit::GetReactionTo(Unit const* target) const
                     // however client seems to allow mixed group parties, because in 13850 client it works like:
                     // return GetFactionReactionTo(GetFactionTemplateEntry(), target);
                 if (selfPlayerOwner->InBattleground() && selfPlayerOwner->GetBattleground()->GetStatus() != STATUS_IN_PROGRESS)
-                    return REP_FRIENDLY; // Õ½³¡Ã»ÔÚ½øÐÐÖÐÊ±£¬ÊÇÓÑºÃ×´Ì¬
+                    return REP_FRIENDLY; // æˆ˜åœºæ²¡åœ¨è¿›è¡Œä¸­æ—¶ï¼Œæ˜¯å‹å¥½çŠ¶æ€
             }
 
             // check FFA_PVP
@@ -10669,6 +10676,14 @@ uint32 Unit::SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uin
     // Config : RATE_CREATURE_X_SPELLDAMAGE & Do Not Modify Pet/Guardian/Mind Controled Damage
     if (GetTypeId() == TYPEID_UNIT && (!ToCreature()->IsPet() || !ToCreature()->IsGuardian() || !ToCreature()->IsControlledByPlayer()))
         DoneTotalMod *= ToCreature()->GetSpellDamageMod(ToCreature()->GetCreatureTemplate()->rank);
+    if (GetTypeId() == TYPEID_UNIT && (!ToCreature()->IsPet() || !ToCreature()->IsGuardian() || !ToCreature()->IsControlledByPlayer()))
+    {
+        uint32 rank = sLegendLevelMgr->GetCustomRank(ToCreature());
+        LLevelRankStats const* rankStats =sLegendLevelMgr->GetLLevelRankStats(rank);
+        // dsy: dmg alreay multiplied melee rate when calculating melee damage, so we should divide melee rate before multiply spell rate
+        DoneTotalMod /= rankStats->meleeRate > 0.001f ? rankStats->meleeRate : 0.001f; 
+        DoneTotalMod *= rankStats->spellRate > 0.001f ? rankStats->spellRate : 0.001f;
+    }
 
     // Some spells don't benefit from pct done mods
     if (!spellProto->HasAttribute(SPELL_ATTR6_LIMIT_PCT_DAMAGE_MODS))
@@ -16398,8 +16413,21 @@ void Unit::Kill(Unit* killer, Unit* victim, bool durabilityLoss, WeaponAttackTyp
             Loot* loot = &creature->loot;
             loot->clear();
 
+            // dsy: if creature in dungeon which difficulty > 0, then loot id = origenal loot id * 100 + difficulty. two digitals for difficulty should enough.
             if (uint32 lootid = creature->GetCreatureTemplate()->lootid)
+            {
+                uint32 diff = 0;
+                if (creature->GetMap()->IsDungeon())
+                    diff = creature->GetMap()->ToInstanceMap()->GetCustomDifficulty();
+                if (diff > 0)
+                {
+                    uint32 diffLootId = lootid * 100 + diff;
+                    LootTemplate const* tab = LootTemplates_Creature.GetLootFor(diffLootId);
+                    if (tab)
+                        lootid = diffLootId;
+                }
                 loot->FillLoot(lootid, LootTemplates_Creature, looter, false, false, creature->GetLootMode());
+            }
 
             if (creature->GetLootMode())
                 loot->generateMoneyLoot(creature->GetCreatureTemplate()->mingold, creature->GetCreatureTemplate()->maxgold);
@@ -19390,7 +19418,7 @@ void Unit::BuildValuesUpdate(uint8 updateType, ByteBuffer* data, Player* target)
                     else
                         fieldBuffer << m_uint32Values[index];
                 }// pussywizard / Callmephil
-                 //Õ½³¡×¼±¸½×¶ÎÓÑºÃ
+                 //æˆ˜åœºå‡†å¤‡é˜¶æ®µå‹å¥½
                 else if (IsControlledByPlayer() && target != this && target->InBattleground() && target->GetBattleground()->GetStatus() != STATUS_IN_PROGRESS)
                 {
                     if (index == UNIT_FIELD_BYTES_2)

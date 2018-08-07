@@ -348,6 +348,8 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recvData)
 
             if (!normalizePlayerName(to))
             {
+                // dsy: for fake players do not show the "player not found" message
+                break;
                 SendPlayerNotFoundNotice(to);
                 break;
             }

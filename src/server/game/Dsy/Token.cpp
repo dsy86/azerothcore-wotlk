@@ -59,6 +59,12 @@ uint32 Token::Get() const
 {
     return m_value;
 }
+uint32 Token::GetMin()
+{
+    if (GetTemplate())
+        return GetTemplate()->defaultValue;
+    return 0;
+}
 uint32 Token::GetMax()
 {
     if (GetTemplate())
@@ -82,10 +88,11 @@ void Token::Set(uint32 value, string reason)
 void Token::Add(int32 value, string reason)
 {
     if (value == 0) return;
-    if ((value + int32(m_value)) < 0)
-        value = -int32(m_value);
+    if ((value + int32(m_value)) < int32(GetMin()))
+        value = int32(GetMin()) - int32(m_value);
     if (GetMax() > 0 && (m_value + uint32(value)) > GetMax())
         value = GetMax() - m_value;
+    if (value == 0) return;
     Set(uint32(m_value + value), reason);
 }
 
@@ -139,7 +146,7 @@ void TokenMgr::LoadTokenTemplate()
     sLog->outString();
 }
 
-void Player::_LoadToken()
+void Player::LoadToken()
 {
     TokenTemplateStore allToken = sTokenMgr->GetAllTokens();
     for (TokenTemplateStore::iterator itr = allToken.begin(); itr != allToken.end(); ++itr)
@@ -178,7 +185,7 @@ void Player::_LoadToken()
     }
 }
 
-void Player::_SaveToken(SQLTransaction& trans)
+void Player::SaveToken(SQLTransaction& trans)
 {
     if (m_tokens.empty())
         return;

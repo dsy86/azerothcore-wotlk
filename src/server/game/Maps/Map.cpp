@@ -1,8 +1,9 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  */
+#pragma execution_character_set("UTF-8")
 
 #include "Map.h"
 #include "Battleground.h"
@@ -24,6 +25,8 @@
 #include "VMapFactory.h"
 #include "LFGMgr.h"
 #include "Chat.h"
+#include "LegendLevel.h"
+#include "Player.h"
 #ifdef ELUNA
 #include "LuaEngine.h"
 #endif
@@ -2468,10 +2471,10 @@ template void Map::RemoveFromMap(DynamicObject*, bool);
 
 /* ******* Dungeon Instance Maps ******* */
 
-InstanceMap::InstanceMap(uint32 id, uint32 InstanceId, uint8 SpawnMode, Map* _parent)
+InstanceMap::InstanceMap(uint32 id, uint32 InstanceId, uint8 SpawnMode, Map* _parent, uint32 customDifficulty)
   : Map(id, InstanceId, SpawnMode, _parent),
     m_resetAfterUnload(false), m_unloadWhenEmpty(false),
-    instance_script(NULL), i_script_id(0)
+    instance_script(NULL), i_script_id(0), m_customDifficulty(customDifficulty)
 {
     //lets initialize visibility distance for dungeons
     InstanceMap::InitVisibilityDistance();
@@ -2667,6 +2670,14 @@ bool InstanceMap::AddPlayerToMap(Player* player)
     if (instance_script)
         instance_script->OnPlayerEnter(player);
 
+    if (IsDungeon())
+    {
+        player->SendMsgHint("难度等级：" + sLegendLevelMgr->DifficultyName(GetCustomDifficulty()));
+        if (IsNonRaidDungeon())
+            player->SendMsgHint("如已产生进度，切换为其他难度后，此副本将会被重置");
+        else
+            player->SendMsgHint("如已产生进度，此副本难度无法切换，请等待系统重置");
+    }
     return true;
 }
 

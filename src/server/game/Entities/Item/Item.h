@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -15,6 +15,7 @@
 
 class SpellInfo;
 class Bag;
+class Stone;
 class Unit;
 
 struct ItemSetEffect
@@ -229,6 +230,10 @@ class Item : public Object
 
         bool IsLocked() const { return !HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAG_UNLOCKED); }
         bool IsBag() const { return GetTemplate()->InventoryType == INVTYPE_BAG; }
+        bool IsStone() const { return GetTemplate()->IsStone(); }
+        Stone* ToStone() { if (IsStone()) return reinterpret_cast<Stone*>(this); else return nullptr; }
+        const Stone* ToStone() const { if (IsStone()) return reinterpret_cast<const Stone*>(this); else return nullptr; }
+
         bool IsCurrencyToken() const { return GetTemplate()->IsCurrencyToken(); }
         bool IsNotEmptyBag() const;
         bool IsBroken() const { return GetUInt32Value(ITEM_FIELD_MAXDURABILITY) > 0 && GetUInt32Value(ITEM_FIELD_DURABILITY) == 0; }

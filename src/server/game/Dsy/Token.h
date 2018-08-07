@@ -41,6 +41,7 @@ public:
     string Name();
     string Desc();
     uint32 Get() const;
+    uint32 GetMin();
     uint32 GetMax();
     bool IsAccountToken();
     void Set(uint32 value, string reason = "");

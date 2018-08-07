@@ -1,5 +1,4 @@
 ﻿#pragma execution_character_set("UTF-8")
-
 #include "LegendLevel.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -7,6 +6,8 @@
 #include "Creature.h"
 #include "Map.h"
 #include "Group.h"
+#include "ItemPrototype.h"
+#include "DsyMiscMgr.h"
 
 LegendLevelMgr::LegendLevelMgr() { }
 LegendLevelMgr::~LegendLevelMgr() { }
@@ -42,9 +43,9 @@ void LegendLevelMgr::LoadXPperLegendLevelData()
         uint32 current_level = fields[0].GetUInt32();
         uint32 current_xp    = fields[1].GetUInt32();
 
-        if (current_level >= GetMaxLLevel())
+        if (current_level > GetMaxLLevel())
         {
-            sLog->outString("Unused legend level %u in `custom_legendlevel_xp` table, ignoring.", current_level);
+            sLog->outString("Unused legend level %u in `_legendlevel_xp` table, ignoring.", current_level);
             ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
             continue;
         }
@@ -227,7 +228,60 @@ LLevelMapStats const * LegendLevelMgr::GetLLevelMapStats(uint32 map, uint32 diff
         if (it->second.map == map && it->second.difficulty == difficulty)
             return &(it->second);
     }
+    if (difficulty > 0)
+        GetLLevelMapStats(map, difficulty - 1);
+
     return nullptr;
+}
+
+void LegendLevelMgr::LoadLLevelLevelStats()
+{
+    uint32 oldMSTime = getMSTime();
+    QueryResult result = WorldDatabase.Query("SELECT llevel,strength,agility,stamina,intellect,spirit,attackpower,spellpower,haste,crit,hit FROM _legendlevel_levelstats");
+
+    if (!result)
+    {
+        sLog->outString(">> Loaded 0 level stats. DB table `_legendlevel_levelstats` is empty.");
+        sLog->outString();
+        return;
+    }
+
+    uint32 count = 0;
+    do
+    {
+        Field* fields = result->Fetch();
+
+        LLevelLevelStats data;
+        data.llevel      = fields[0].GetUInt32();
+        data.strength    = fields[1].GetUInt32();
+        data.agility     = fields[2].GetUInt32();
+        data.stamina     = fields[3].GetUInt32();
+        data.intellect   = fields[4].GetUInt32();
+        data.spirit      = fields[5].GetUInt32();
+        data.attackpower = fields[6].GetUInt32();
+        data.spellpower  = fields[7].GetUInt32();
+        data.haste       = fields[8].GetUInt32();
+        data.crit        = fields[9].GetUInt32();
+        data.hit         = fields[10].GetUInt32();
+        m_llevelLevelStatsStore[data.llevel] = data;
+        ++count;
+    } while (result->NextRow());
+
+    sLog->outString(">> Loaded %u level stats in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    sLog->outString();
+
+}
+
+LLevelLevelStats const * LegendLevelMgr::GetLLevelLevelStats(uint32 llevel)
+{
+    if (llevel <= 0)
+        return nullptr;
+    LLevelLevelStatsContainer::const_iterator it = m_llevelLevelStatsStore.find(llevel);
+
+    if (it != m_llevelLevelStatsStore.end())
+        return &(it->second);
+    else
+        return GetLLevelLevelStats(llevel - 1);
 }
 
 uint32 LegendLevelMgr::GetCustomRank(Creature * creature)
@@ -309,14 +363,64 @@ void Player::LLevelup(int32 value)
 {
     if (value == 0)
         value = 1;
+    ApplyLegendLevelStats(GetToken(LEGEND_LEVEL), false);
     AddToken(LEGEND_LEVEL, value, "legend level up");
     uint32 nowLLevel = GetToken(LEGEND_LEVEL);
+    ApplyLegendLevelStats(nowLLevel, true);
     SendLLevelupPacket(nowLLevel);
     SetToken(LEGEND_EXP, 0, "legend level up set legend exp to zero");
     if (value > 0)
-        SendMsgHint("巅峰等级升级至" + to_string(nowLLevel) + "级！");
-    RefreshName();
-    SendLLevelupPacket(GetToken(LEGEND_LEVEL));
+    {
+        LLevelLevelStats const* levelStatsNow = sLegendLevelMgr->GetLLevelLevelStats(nowLLevel);
+        LLevelLevelStats const* levelStats = sLegendLevelMgr->GetLLevelLevelStats(nowLLevel - value);
+
+        uint32 strdiff = levelStatsNow->strength - levelStats->strength;
+        uint32 agidiff = levelStatsNow->agility - levelStats->agility;
+        uint32 stadiff = levelStatsNow->stamina - levelStats->stamina;
+        uint32 intediff = levelStatsNow->intellect - levelStats->intellect;
+        uint32 spidiff = levelStatsNow->spirit - levelStats->spirit;
+        uint32 apdiff = levelStatsNow->attackpower - levelStats->attackpower;
+        uint32 spdiff = levelStatsNow->spellpower - levelStats->spellpower;
+        uint32 hastediff = levelStatsNow->haste - levelStats->haste;
+        uint32 critdiff = levelStatsNow->crit - levelStats->crit;
+        uint32 hitdiff = levelStatsNow->hit - levelStats->hit;
+
+        string msg = "巅峰等级升级至" + to_string(nowLLevel) + "级！";
+        msg += "|r |cff1eff00";
+        if (strdiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_STRENGTH) + " + " + to_string(strdiff);
+        if (agidiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_AGILITY) + " + " + to_string(agidiff);
+        if (stadiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_STAMINA) + " + " + to_string(stadiff);
+        if (intediff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_INTELLECT) + " + " + to_string(intediff);
+        if (spidiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_SPIRIT) + " + " + to_string(spidiff);
+        if (apdiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_ATTACK_POWER) + " + " + to_string(apdiff);
+        if (spdiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_SPELL_POWER) + " + " + to_string(spdiff);
+        if (hastediff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_HASTE_RATING) + " + " + to_string(hastediff);
+        if (critdiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_CRIT_RATING) + " + " + to_string(critdiff);
+        if (hitdiff)
+            msg += "\n" + sDsyMiscMgr->StatName(ITEM_MOD_HIT_RATING) + " + " + to_string(hitdiff);
+
+        SendMsgHint(msg);
+    }
+    // set current level health and mana/energy to maximum after applying all mods.
+    SetFullHealth();
+    SetPower(POWER_MANA, GetMaxPower(POWER_MANA));
+    SetPower(POWER_ENERGY, GetMaxPower(POWER_ENERGY));
+    if (GetPower(POWER_RAGE) > GetMaxPower(POWER_RAGE))
+        SetPower(POWER_RAGE, GetMaxPower(POWER_RAGE));
+    SetPower(POWER_FOCUS, 0);
+    SetPower(POWER_HAPPINESS, 0);
+
+    //RefreshName();
+    //SendLLevelupPacket(GetToken(LEGEND_LEVEL));
 }
 
 void Player::RefreshName()
@@ -360,9 +464,9 @@ void Player::AddLLevelExp(uint32 value, Unit* victim)
 {
     if (value == 0) return;
     SendLogXPGain(value, victim, 0, false);
-    uint32 nextLvlXP = sLegendLevelMgr->GetXPforNextLegendLevel(GetToken(LEGEND_EXP));
-    uint32 newXP = GetToken(LEGEND_EXP) + value;
     uint32 oriLLevel = GetToken(LEGEND_LEVEL);
+    uint32 nextLvlXP = sLegendLevelMgr->GetXPforNextLegendLevel(oriLLevel);
+    uint32 newXP = GetToken(LEGEND_EXP) + value;
     uint32 newLLevel = oriLLevel;
 
     while (newXP >= nextLvlXP && newLLevel < sLegendLevelMgr->GetMaxLLevel())
@@ -406,7 +510,7 @@ void Player::SendLLevelupPacket(uint32 value)
     GetSession()->SendPacket(&data);
 }
 
-void Player::_LoadDifficulty()
+void Player::LoadDifficulty()
 {
     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER_DIFFICULTY);
     stmt->setUInt32(0, GetGUIDLow());
@@ -421,7 +525,7 @@ void Player::_LoadDifficulty()
     }
 }
 
-void Player::_SaveDifficulty(SQLTransaction& trans)
+void Player::SaveDifficulty(SQLTransaction& trans)
 {
     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_REP_CHARACTER_DIFFICULTY);
     stmt->setUInt32(0, GetGUIDLow());
@@ -434,7 +538,7 @@ string LegendLevelMgr::DifficultyName(uint32 value)
     switch (value)
     {
     case 0:
-        return "[普通一]";
+        return "[普通]";
     case 1:
         return "[普通二]";
     case 2:
@@ -463,15 +567,15 @@ string LegendLevelMgr::DifficultyName(uint32 value)
 
 }
 
-bool Player::SetSelectedDifficulty(uint32 value)
+void Player::SetSelectedDifficulty(uint32 value)
 {
     Group* group = GetGroup();
     if (m_selectedDifficulty == value || (group && group->IsLeader(GetGUID()) && group->GetSelectedDifficulty() == value))
-        return false;
+        return;
     if (GetMap()->IsDungeon())
     {
         SendErrorMsgHint("请离开副本后，再选择其他难度的副本");
-        return false;
+        return;
     }
     m_selectedDifficulty = value;
     string difficultyName = sLegendLevelMgr->DifficultyName(value);
@@ -495,7 +599,7 @@ bool Player::SetSelectedDifficulty(uint32 value)
         Player::ResetInstances(GetGUIDLow(), INSTANCE_RESET_CHANGE_DIFFICULTY, false);
     }
     SendMsgHint("由于您切换了难度，除团队副本以外的所有副本已被重置");
-    return true;
+    return;
 }
 
 void Group::SetSelectedDifficulty(uint32 value)
@@ -508,4 +612,22 @@ void Group::SetSelectedDifficulty(uint32 value)
         stmt->setUInt32(1, GetLowGUID());
         CharacterDatabase.Execute(stmt);
     }
+}
+
+void Player::ApplyLegendLevelStats(uint32 llevel, bool apply)
+{
+    if (apply == m_legendLevelApplied)
+        return;
+    LLevelLevelStats const* levelStats = sLegendLevelMgr->GetLLevelLevelStats(llevel);
+    ApplyAddtionStats(ITEM_MOD_STRENGTH, levelStats->strength, apply);
+    ApplyAddtionStats(ITEM_MOD_AGILITY, levelStats->agility, apply);
+    ApplyAddtionStats(ITEM_MOD_STAMINA, levelStats->stamina, apply);
+    ApplyAddtionStats(ITEM_MOD_INTELLECT, levelStats->intellect, apply);
+    ApplyAddtionStats(ITEM_MOD_SPIRIT, levelStats->spirit, apply);
+    ApplyAddtionStats(ITEM_MOD_ATTACK_POWER, levelStats->attackpower, apply);
+    ApplyAddtionStats(ITEM_MOD_SPELL_POWER, levelStats->spellpower, apply);
+    ApplyAddtionStats(ITEM_MOD_HASTE_RATING, levelStats->haste, apply);
+    ApplyAddtionStats(ITEM_MOD_CRIT_RATING, levelStats->crit, apply);
+    ApplyAddtionStats(ITEM_MOD_HIT_RATING, levelStats->hit, apply);
+    m_legendLevelApplied = apply;
 }

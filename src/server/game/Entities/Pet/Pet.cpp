@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -22,6 +22,7 @@
 #include "Battleground.h"
 #include "InstanceScript.h"
 #include "ArenaSpectator.h"
+#include "LegendLevel.h"
 
 #define PET_XP_FACTOR 0.05f
 
@@ -985,6 +986,34 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
             }
             break;
         }
+    }
+
+    if (ToCreature() && !IsControlledByPlayer())
+    {
+        float customHp = 1;
+        float customDmg = 1;
+        sLegendLevelMgr->CalculateStats(ToCreature(), customHp, customDmg);
+        float customDmgMin = customDmg * 0.9f;
+        float customDmgMax = customDmg * 1.1f;
+        float customAP = customDmg * 0.6f * 14.0f;
+
+
+        SetCreateHealth((uint32)customHp);
+        SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, GetCreateHealth());
+        SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, 0);
+
+        SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, customDmgMin);
+        SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, customDmgMax);
+
+        for (uint8 i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
+            SetModifierValue(UnitMods(UNIT_MOD_RESISTANCE_START + i), BASE_VALUE, 0);
+
+        // xinef: added some multipliers so debuffs can affect pets in any way...
+        SetCreateStat(STAT_STRENGTH, 0);
+        SetCreateStat(STAT_AGILITY, 0);
+        SetCreateStat(STAT_STAMINA, 0);
+        SetCreateStat(STAT_INTELLECT, 0);
+        SetCreateStat(STAT_SPIRIT, 0);
     }
 
     // Can be summon and guardian

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 
  *
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
@@ -77,7 +77,7 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     PrepareStatement(CHAR_INS_CHARACTER_SEASONALQUESTSTATUS, "INSERT INTO character_queststatus_seasonal (guid, quest, event) VALUES (?, ?, ?)", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SEL_CHARACTER_REPUTATION, "SELECT faction, standing, flags FROM character_reputation WHERE guid = ?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SEL_CHARACTER_INVENTORY, "SELECT creatorGuid, giftCreatorGuid, count, duration, charges, flags, enchantments, randomPropertyId, durability, playedTime, text, bag, slot, "
-                     "item, itemEntry FROM character_inventory ci JOIN item_instance ii ON ci.item = ii.guid WHERE ci.guid = ? ORDER BY bag, slot", CONNECTION_ASYNC);
+                     "item, itemEntry, si.stoneLevel, si.stoneGrade FROM character_inventory ci JOIN item_instance ii ON ci.item = ii.guid LEFT JOIN _stone_instance si ON ii.guid = si.guid WHERE ci.guid = ? ORDER BY bag, slot", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SEL_CHARACTER_ACTIONS, "SELECT a.button, a.action, a.type FROM character_action as a, characters as c WHERE a.guid = c.guid AND a.spec = c.activeTalentGroup AND a.guid = ? ORDER BY button", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SEL_CHARACTER_MAILCOUNT, "SELECT COUNT(id) FROM mail WHERE receiver = ? AND (checked & 1) = 0 AND deliver_time <= ?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SEL_CHARACTER_MAILDATE, "SELECT MIN(deliver_time) FROM mail WHERE receiver = ? AND (checked & 1) = 0", CONNECTION_ASYNC);
@@ -236,7 +236,7 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     PrepareStatement(CHAR_DEL_TUTORIALS, "DELETE FROM account_tutorial WHERE accountId = ?", CONNECTION_ASYNC);
 
     // Instance saves
-    PrepareStatement(CHAR_INS_INSTANCE_SAVE, "INSERT INTO instance (id, map, resettime, difficulty, completedEncounters, data) VALUES (?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_INS_INSTANCE_SAVE, "INSERT INTO instance (id, map, resettime, difficulty, completedEncounters, data, customDifficulty) VALUES (?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
     PrepareStatement(CHAR_UPD_INSTANCE_SAVE_DATA, "UPDATE instance SET data=? WHERE id=?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_UPD_INSTANCE_SAVE_ENCOUNTERMASK, "UPDATE instance SET completedEncounters=? WHERE id=?", CONNECTION_ASYNC);
 
@@ -555,4 +555,18 @@ void CharacterDatabaseConnection::DoPrepareStatements()
 
     // Deserter tracker
     PrepareStatement(CHAR_INS_DESERTER_TRACK, "INSERT INTO battleground_deserters (guid, type, datetime) VALUES (?, ?, NOW())", CONNECTION_ASYNC);
+
+    // Token
+    PrepareStatement(CHAR_SEL_CHARACTER_TOKEN, "SELECT guid,tokenId,value FROM _character_token WHERE guid = ? ORDER BY guid, tokenId", CONNECTION_SYNCH);
+    PrepareStatement(CHAR_REP_CHARACTER_TOKEN, "REPLACE INTO _character_token (guid,tokenId,value) VALUES (?,?,?)", CONNECTION_ASYNC);
+
+    // Difficulty
+    PrepareStatement(CHAR_SEL_CHARACTER_DIFFICULTY, "SELECT guid,difficulty FROM _difficulty WHERE playerOrGroup = 0 AND guid = ?", CONNECTION_SYNCH);
+    PrepareStatement(CHAR_REP_CHARACTER_DIFFICULTY, "REPLACE INTO _difficulty (guid, playerOrGroup, difficulty) VALUES (?, 0, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_REP_GROUP_DIFFICULTY, "REPLACE INTO _difficulty (guid, playerOrGroup, difficulty) VALUES (?, 1, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_UPD_GROUP_CUSTOMDIFFICULTY, "UPDATE _difficulty SET difficulty = ? WHERE guid = ?", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_REP_STONE_INSTANCE, "REPLACE INTO _stone_instance (stoneLevel, stoneGrade, guid) VALUES (?, ?, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_UPD_STONE_INSTANCE, "UPDATE _stone_instance SET stoneLevel = ?, stoneGrade = ? WHERE guid = ?", CONNECTION_ASYNC);
+
+
 }

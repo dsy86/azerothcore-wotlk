@@ -45,6 +45,21 @@ struct LLevelMapStats
 };
 typedef UNORDERED_MAP<uint32, LLevelMapStats> LLevelMapStatsContainer;
 
+struct LLevelLevelStats
+{
+    uint32 llevel;
+    uint32 strength;
+    uint32 agility;
+    uint32 stamina;
+    uint32 intellect;
+    uint32 spirit;
+    uint32 attackpower;
+    uint32 spellpower;
+    uint32 haste;
+    uint32 crit;
+    uint32 hit;
+};
+typedef UNORDERED_MAP<uint32, LLevelLevelStats> LLevelLevelStatsContainer;
 
 class LegendLevelMgr
 {
@@ -59,6 +74,7 @@ private:
     LLevelCreatureStatsContainer m_llevelCreatureStatsStore;
     LLevelRankStatsContainer m_llevelRankStatsStore;
     LLevelMapStatsContainer m_llevelMapStatsStore;
+    LLevelLevelStatsContainer m_llevelLevelStatsStore;
 
 public:
     friend class ACE_Singleton<LegendLevelMgr, ACE_Null_Mutex>;
@@ -77,6 +93,8 @@ public:
     LLevelRankStats const* GetLLevelRankStats(uint32 rank);
     void LoadLLevelMapStats();
     LLevelMapStats const* GetLLevelMapStats(uint32 map, uint32 difficulty);
+    void LoadLLevelLevelStats();
+    LLevelLevelStats const* GetLLevelLevelStats(uint32 llevel);
     uint32 GetCustomRank(Creature* creature);
     void CalculateStats(Creature* creature, float &hp, float &dmg);
     string DifficultyName(uint32 value);

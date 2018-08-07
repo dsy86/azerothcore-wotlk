@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -12,6 +12,7 @@
 
 #include "Item.h"
 #include "ItemPrototype.h"
+#include "Stone.h"
 
 class Bag : public Item
 {
@@ -56,6 +57,9 @@ class Bag : public Item
 
 inline Item* NewItemOrBag(ItemTemplate const* proto)
 {
+    if (proto->IsStone())
+        return new Stone;
+
     return (proto->InventoryType == INVTYPE_BAG) ? new Bag : new Item;
 }
 #endif

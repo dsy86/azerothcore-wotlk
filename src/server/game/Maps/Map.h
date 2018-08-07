@@ -633,6 +633,18 @@ class Map : public GridRefManager<NGridType>
 
         ZoneDynamicInfoMap _zoneDynamicInfo;
         uint32 _defaultLight;
+
+    private:
+        uint32 m_customDifficulty;
+    public:
+        uint32 GetCustomDifficulty()
+        {
+            return m_customDifficulty;
+        }
+        void SetCustomDifficulty(uint32 value)
+        {
+            m_customDifficulty = value;
+        }
 };
 
 
@@ -648,7 +660,7 @@ enum InstanceResetMethod
 class InstanceMap : public Map
 {
     public:
-        InstanceMap(uint32 id, uint32 InstanceId, uint8 SpawnMode, Map* _parent);
+        InstanceMap(uint32 id, uint32 InstanceId, uint8 SpawnMode, Map* _parent, uint32 customDifficulty = 0);
         ~InstanceMap();
         bool AddPlayerToMap(Player*);
         void RemovePlayerFromMap(Player*, bool);
@@ -672,6 +684,18 @@ class InstanceMap : public Map
         bool m_unloadWhenEmpty;
         InstanceScript* instance_script;
         uint32 i_script_id;
+
+    private:
+        uint32 m_customDifficulty;
+    public:
+        uint32 GetCustomDifficulty()
+        {
+            return m_customDifficulty;
+        }
+        void SetCustomDifficulty(uint32 value)
+        {
+            m_customDifficulty = value;
+        }
 };
 
 class BattlegroundMap : public Map

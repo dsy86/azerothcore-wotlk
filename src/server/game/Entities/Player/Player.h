@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -22,6 +22,8 @@
 #include "ObjectMgr.h"
 
 #include "smallfolk_cpp/smallfolk.h"
+#include "Token.h"
+#include "Legendlevel.h"
 
 #include <string>
 #include <vector>
@@ -46,6 +48,7 @@ class PlayerSocial;
 class SpellCastTargets;
 class UpdateMask;
 class AIOMsg;
+class Token;
 
 typedef std::deque<Mail*> PlayerMails;
 
@@ -138,6 +141,7 @@ struct SpellCooldown
 
 typedef std::map<uint32, SpellCooldown> SpellCooldowns;
 typedef UNORDERED_MAP<uint32 /*instanceId*/, time_t/*releaseTime*/> InstanceTimeMap;
+typedef std::map<uint32, Token> TokenMap;
 
 enum TrainerSpellState
 {
@@ -2987,6 +2991,33 @@ class Player : public Unit, public GridObject<Player>
         uint16 m_messageIdIndex;
 
         friend class AIOHandlers;
+
+        // token
+    public:
+        void AddToken(uint32 id, int32 value, string reason = "");
+        void RemoveToken(uint32 id, uint32 value, string reason = "");
+        void SetToken(uint32 id, uint32 value, string reason = "");
+        uint32 GetToken(uint32 id);
+        void LLevelup(int32 value = 1);
+        void AddLLevelExp(uint32 value, Unit* victim);
+        void SendLLevelupPacket(uint32 value);
+        void RefreshName();
+        uint32 GetSelectedDifficulty()
+        {
+            return m_selectedDifficulty;
+        }
+        void SetSelectedDifficulty(uint32 value);
+        void LoadToken();
+        void SaveToken(SQLTransaction& trans);
+        void LoadDifficulty();
+        void SaveDifficulty(SQLTransaction& trans);
+        void ApplyAddtionStats(ItemModType statType, int32 val, bool apply);
+        void ApplyLegendLevelStats(uint32 llevel, bool apply);
+
+    private:
+        TokenMap m_tokens;
+        uint32 m_selectedDifficulty = 0;
+        bool m_legendLevelApplied = false;
 };
 
 void AddItemsSetItem(Player*player, Item* item);

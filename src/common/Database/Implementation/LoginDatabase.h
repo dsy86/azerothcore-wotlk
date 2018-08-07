@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 
  *
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
@@ -104,6 +104,10 @@ enum LoginDatabaseStatements
 
     LOGIN_INS_ACCOUNT_MUTE,
     LOGIN_SEL_ACCOUNT_MUTE_INFO,
+
+    LOGIN_SEL_ACCOUNT_TOKEN,
+    LOGIN_REP_ACCOUNT_TOKEN,
+    LOGIN_INS_TOKEN_LOG,
 
     MAX_LOGINDATABASE_STATEMENTS
 };

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -41,6 +41,7 @@
 #include "WorldPacket.h"
 
 #include "Transport.h"
+#include "LegendLevel.h"
 
 #ifdef ELUNA
 #include "LuaEngine.h"
@@ -438,6 +439,8 @@ bool Creature::UpdateEntry(uint32 Entry, const CreatureData* data, bool changele
     CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(getLevel(), cInfo->unit_class);
     float armor = (float)stats->GenerateArmor(cInfo); // TODO: Why is this treated as uint32 when it's a float?
     SetModifierValue(UNIT_MOD_ARMOR,             BASE_VALUE, armor);
+    // dsy: no armor
+    SetModifierValue(UNIT_MOD_ARMOR,             BASE_VALUE, 0);
     SetModifierValue(UNIT_MOD_RESISTANCE_HOLY,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_HOLY]));
     SetModifierValue(UNIT_MOD_RESISTANCE_FIRE,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_FIRE]));
     SetModifierValue(UNIT_MOD_RESISTANCE_NATURE, BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_NATURE]));
@@ -1181,6 +1184,37 @@ void Creature::SelectLevel(bool changelevel)
 
     SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, cInfo->attackpower);
     SetModifierValue(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, cInfo->rangedattackpower);
+
+    if (!IsPet() || !IsGuardian() || !IsControlledByPlayer())
+    {
+        // dsy: use custom stats
+        if (changelevel)
+            SetLevel(80);
+        float customHp = 1;
+        float customDmg = 1;
+        sLegendLevelMgr->CalculateStats(this, customHp, customDmg);
+        float customDmgMin = customDmg * 0.9f;
+        float customDmgMax = customDmg * 1.1f;
+        float customAP = customDmg * 0.6f * 14.0f;
+
+        SetCreateHealth((uint32)customHp);
+        SetMaxHealth((uint32)customHp);
+        SetHealth((uint32)customHp);
+        SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, customHp);
+        ResetPlayerDamageReq();
+
+        SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, customDmgMin);
+        SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, customDmgMax);
+
+        SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE, customDmgMin);
+        SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE, customDmgMax);
+
+        SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE, customDmgMin);
+        SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE, customDmgMax);
+
+        SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, customAP);
+        SetModifierValue(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, customAP);
+    }
 
     sScriptMgr->Creature_SelectLevel(cInfo, this);
 }

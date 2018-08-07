@@ -367,12 +367,15 @@ void Player::UpdateAttackPowerAndDamage(bool ranged)
                 break;
             case CLASS_ROGUE:
                 val2 = level * 2.0f + GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY) - 20.0f;
+                val2 -= GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY);
                 break;
             case CLASS_HUNTER:
                 val2 = level * 2.0f + GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY) - 20.0f;
+                val2 -= GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY);
                 break;
             case CLASS_SHAMAN:
                 val2 = level * 2.0f + GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY) - 20.0f;
+                val2 -= GetStat(STAT_STRENGTH) + GetStat(STAT_AGILITY);
                 break;
             case CLASS_DRUID:
             {
@@ -610,6 +613,10 @@ void Player::UpdateBlockPercentage()
         value += GetTotalAuraModifier(SPELL_AURA_MOD_BLOCK_PERCENT);
         // Increase from rating
         value += GetRatingBonusValue(CR_BLOCK);
+
+        if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
+             value = value > sWorld->getFloatConfig(CONFIG_STATS_LIMITS_BLOCK) ? sWorld->getFloatConfig(CONFIG_STATS_LIMITS_BLOCK) : value;
+
         value = value < 0.0f ? 0.0f : value;
     }
     SetStatFloatValue(PLAYER_BLOCK_PERCENTAGE, value);
@@ -644,6 +651,8 @@ void Player::UpdateCritPercentage(WeaponAttackType attType)
     float value = GetTotalPercentageModValue(modGroup) + GetRatingBonusValue(cr);
     // Modify crit from weapon skill and maximized defense skill of same level victim difference
     value += (int32(GetWeaponSkillValue(attType)) - int32(GetMaxSkillValueForLevel())) * 0.04f;
+    if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
+         value = value > sWorld->getFloatConfig(CONFIG_STATS_LIMITS_CRIT) ? sWorld->getFloatConfig(CONFIG_STATS_LIMITS_CRIT) : value;
     value = value < 0.0f ? 0.0f : value;
     SetStatFloatValue(index, value);
 }
@@ -738,6 +747,8 @@ void Player::UpdateParryPercentage()
         m_realParry = nondiminishing + diminishing * parry_cap[pclass] / (diminishing + parry_cap[pclass] * m_diminishing_k[pclass]);
         m_realParry = m_realParry < 0.0f ? 0.0f : m_realParry;
 
+        if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
+             value = value > sWorld->getFloatConfig(CONFIG_STATS_LIMITS_PARRY) ? sWorld->getFloatConfig(CONFIG_STATS_LIMITS_PARRY) : value;
         value = std::max(diminishing + nondiminishing, 0.0f);
     }
 
@@ -776,6 +787,10 @@ void Player::UpdateDodgePercentage()
     
     m_realDodge = m_realDodge < 0.0f ? 0.0f : m_realDodge;
     float value = std::max(diminishing + nondiminishing, 0.0f);
+    value = diminishing + nondiminishing;
+    if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
+         value = value > sWorld->getFloatConfig(CONFIG_STATS_LIMITS_DODGE) ? sWorld->getFloatConfig(CONFIG_STATS_LIMITS_DODGE) : value;
+    value = std::max(value, 0.0f);
 
     SetStatFloatValue(PLAYER_DODGE_PERCENTAGE, value);
 }
@@ -1085,11 +1100,16 @@ void Creature::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, 
 
     // pussywizard: subtract value from database till its fixed (the way it worked before creature_levelstats damage implementation)
     float attackPower      = GetTotalAttackPowerValue(attType) - (attType == RANGED_ATTACK ? GetCreatureTemplate()->rangedattackpower : GetCreatureTemplate()->attackpower);
+    // dsy: customAP is dmg * 60%
+    uint32 customAP        = uint32(weaponMinDamage / 0.8f * 0.6f * 14.0f);
+    attackPower            = GetTotalAttackPowerValue(attType) - customAP;
     float baseValue        = GetModifierValue(unitMod, BASE_VALUE) + (attackPower * GetAPMultiplier(attType, normalized) / 14.0f);
     float basePct          = GetModifierValue(unitMod, BASE_PCT);
     float totalValue       = GetModifierValue(unitMod, TOTAL_VALUE);
     float totalPct         = addTotalPct ? GetModifierValue(unitMod, TOTAL_PCT) : 1.0f;
     float dmgMultiplier    = GetCreatureTemplate()->dmg_multiplier; // = dmg_multiplier * _GetDamageMod(rank);
+    // dsy: custom
+    dmgMultiplier          = 1;
 
     minDamage = ((weaponMinDamage + baseValue) * dmgMultiplier * basePct + totalValue) * totalPct;
     maxDamage = ((weaponMaxDamage + baseValue) * dmgMultiplier * basePct + totalValue) * totalPct;

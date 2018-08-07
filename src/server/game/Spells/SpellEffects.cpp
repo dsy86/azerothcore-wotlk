@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -310,6 +310,15 @@ void Spell::EffectSchoolDMG(SpellEffIndex effIndex)
 {
     if (effectHandleMode != SPELL_EFFECT_HANDLE_LAUNCH_TARGET)
         return;
+
+    if (m_originalCaster->GetTypeId() == TYPEID_UNIT && m_originalCaster->ToCreature() != NULL && (!m_originalCaster->ToCreature()->IsPet() || !m_originalCaster->ToCreature()->IsGuardian() || !m_originalCaster->ToCreature()->IsControlledByPlayer()))
+    {
+        if (m_spellInfo->Effects[effIndex].Effect == SPELL_EFFECT_SCHOOL_DAMAGE)
+        {
+            int32 castTime = GetCastTime() > 1500 ? GetCastTime() : 1500;
+            damage = int32(frand(m_originalCaster->GetWeaponDamageRange(BASE_ATTACK, MINDAMAGE), m_originalCaster->GetWeaponDamageRange(BASE_ATTACK, MAXDAMAGE)) * (float)castTime / 1000.0f);
+        }
+    }
 
     if (unitTarget && unitTarget->IsAlive())
     {

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -75,6 +75,8 @@
 #include "TicketMgr.h"
 #include "ScriptMgr.h"
 #include "AIOMsg.h"
+#include "DsyMiscMgr.h"
+#include "Stone.h"
 
 #ifdef ELUNA
 #include "LuaEngine.h"
@@ -544,6 +546,28 @@ inline void KillRewarder::_RewardXP(Player* player, float rate)
         if (Pet* pet = player->GetPet())
             // 4.2.4. If player has pet, reward pet with XP (100% for single player, 50% for group case).
             pet->GivePetXP(_group ? xp / 2 : xp);
+
+        if (_victim->GetTypeId() == TYPEID_UNIT || _victim->GetTypeId() == TYPEID_PLAYER)
+        {
+            uint32 victimLLevel = 0;
+            uint32 playerLLevel = player->GetToken(LEGEND_LEVEL);
+            if (_victim->GetTypeId() == TYPEID_UNIT)
+                victimLLevel = playerLLevel;
+            if (_victim->GetTypeId() == TYPEID_PLAYER)
+                victimLLevel = _victim->ToPlayer()->GetToken(LEGEND_LEVEL);
+            victimLLevel = victimLLevel > (playerLLevel + 5) ? playerLLevel : victimLLevel; // if victim's llevel is higher than player llevel+5, then use player's llevel
+            if (victimLLevel > 0 && int32(playerLLevel - victimLLevel) < 20)
+            {
+                //uint32 lxp = uint32(50.0f * pow(1.042f, victimLLevel - 1)); // dsy todo: chance the formula
+                uint32 lxp = 1;
+                /*if (int32(playerLLevel - victimLLevel) >= 5)
+                    lxp = uint32((float)lxp / (float(playerLLevel - victimLLevel) / 5.f));// dsy todo: chance the formula*/
+                Unit::AuraEffectList const& auras = player->GetAuraEffectsByType(SPELL_AURA_MOD_XP_PCT);
+                for (Unit::AuraEffectList::const_iterator i = auras.begin(); i != auras.end(); ++i)
+                    AddPct(lxp, (*i)->GetAmount());
+                player->AddLLevelExp(lxp, _victim);
+            }
+        }
     }
 }
 
@@ -1381,6 +1405,7 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
     switch (timer)
     {
         case FATIGUE_TIMER:
+            return DISABLED_MIRROR_TIMER; //dsy: disable fatigue
             return MINUTE * IN_MILLISECONDS;
         case BREATH_TIMER:
         {
@@ -6130,21 +6155,30 @@ void Player::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
         float const mult = GetRatingMultiplier(cr);
         float const oldVal = oldRating * mult;
         float const newVal = m_baseRatingValue[cr] * mult;
+        float oldVal2 = oldVal;
+        float newVal2 = newVal;
+        if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
+        {
+            float hasteLimit = sWorld->getFloatConfig(CONFIG_STATS_LIMITS_HASTE);
+            oldVal2 = oldVal2 > hasteLimit ? hasteLimit : oldVal2;
+            newVal2 = newVal2 > hasteLimit ? hasteLimit : newVal2;
+        }
+
         switch (cr)
         {
             case CR_HASTE_MELEE:
-                ApplyAttackTimePercentMod(BASE_ATTACK, oldVal, false);
-                ApplyAttackTimePercentMod(OFF_ATTACK, oldVal, false);
-                ApplyAttackTimePercentMod(BASE_ATTACK, newVal, true);
-                ApplyAttackTimePercentMod(OFF_ATTACK, newVal, true);
+                ApplyAttackTimePercentMod(BASE_ATTACK, oldVal2, false);
+                ApplyAttackTimePercentMod(OFF_ATTACK, oldVal2, false);
+                ApplyAttackTimePercentMod(BASE_ATTACK, newVal2, true);
+                ApplyAttackTimePercentMod(OFF_ATTACK, newVal2, true);
                 break;
             case CR_HASTE_RANGED:
-                ApplyAttackTimePercentMod(RANGED_ATTACK, oldVal, false);
-                ApplyAttackTimePercentMod(RANGED_ATTACK, newVal, true);
+                ApplyAttackTimePercentMod(RANGED_ATTACK, oldVal2, false);
+                ApplyAttackTimePercentMod(RANGED_ATTACK, newVal2, true);
                 break;
             case CR_HASTE_SPELL:
-                ApplyCastTimePercentMod(oldVal, false);
-                ApplyCastTimePercentMod(newVal, true);
+                ApplyCastTimePercentMod(oldVal2, false);
+                ApplyCastTimePercentMod(newVal2, true);
                 break;
             default: 
                 break;
@@ -8924,6 +8958,38 @@ void Player::_RemoveAllItemMods()
         }
     }
 
+    for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
+        if (m_items[i])
+        {
+            ItemTemplate const *proto = m_items[i]->GetTemplate();
+            if (!proto)
+                continue;
+            if (!m_items[i]->IsStone())
+                continue;
+            m_items[i]->ToStone()->ApplyStoneStats(false, this);
+        }
+    }
+
+    for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
+        if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
+                if (m_items[j])
+                {
+                    ItemTemplate const *proto = m_items[j]->GetTemplate();
+                    if (!proto)
+                        continue;
+                    if (!m_items[j]->IsStone())
+                        continue;
+                    m_items[j]->ToStone()->ApplyStoneStats(false, this);
+                }
+            }
+        }
+    }
+
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)
     sLog->outDebug(LOG_FILTER_PLAYER_ITEMS, "_RemoveAllItemMods complete.");
 #endif
@@ -8974,6 +9040,38 @@ void Player::_ApplyAllItemMods()
 
             ApplyItemEquipSpell(m_items[i], true);
             ApplyEnchantment(m_items[i], true);
+        }
+    }
+
+    for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
+        if (m_items[i])
+        {
+            ItemTemplate const *proto = m_items[i]->GetTemplate();
+            if (!proto)
+                continue;
+            if (!m_items[i]->IsStone())
+                continue;
+            m_items[i]->ToStone()->ApplyStoneStats(true, this);
+        }
+    }
+
+    for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
+        if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
+                if (m_items[j])
+                {
+                    ItemTemplate const *proto = m_items[j]->GetTemplate();
+                    if (!proto)
+                        continue;
+                    if (!m_items[j]->IsStone())
+                        continue;
+                    m_items[j]->ToStone()->ApplyStoneStats(true, this);
+                }
+            }
         }
     }
 
@@ -10363,7 +10461,8 @@ uint8 Player::FindEquipSlot(ItemTemplate const* proto, uint32 slot, bool swap) c
                     break;
                 }
             }
-            if (CanDualWield() && CanTitanGrip() && proto->SubClass != ITEM_SUBCLASS_WEAPON_POLEARM && proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF && proto->SubClass != ITEM_SUBCLASS_WEAPON_FISHING_POLE)
+            // dsy: 去掉双持法杖限制
+            if (CanDualWield() && CanTitanGrip()/* && proto->SubClass != ITEM_SUBCLASS_WEAPON_POLEARM && proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF && proto->SubClass != ITEM_SUBCLASS_WEAPON_FISHING_POLE*/)
                 slots[1] = EQUIPMENT_SLOT_OFFHAND;
             break;
         case INVTYPE_TABARD:
@@ -12657,6 +12756,9 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
             stmt->setString(1, ss.str());
             CharacterDatabase.Execute(stmt);
         }
+
+        if (pItem->IsStone())
+            pItem->ToStone()->ApplyStoneStats(true, this);
     }
     return pItem;
 }
@@ -13213,6 +13315,10 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
         // Xinef: item is removed, remove loot from storage if any
         if (proto->Flags & ITEM_PROTO_FLAG_OPENABLE)
             sLootItemStorage->RemoveStoredLoot(pItem->GetGUIDLow());
+
+        // dsy: remove stone stats before deleting
+        if (pItem->IsStone())
+            pItem->ToStone()->ApplyStoneStats(false, this);
 
         if (IsInWorld() && update)
         {
@@ -15962,6 +16068,8 @@ void Player::RewardQuest(Quest const* quest, uint32 reward, Object* questGiver, 
     for (Unit::AuraEffectList::const_iterator i = ModXPPctAuras.begin(); i != ModXPPctAuras.end(); ++i)
         AddPct(XP, (*i)->GetAmount());
 
+    AddLLevelExp(XP, NULL); // dsy todo: chance the formula
+
     int32 moneyRew = 0;
     if (getLevel() < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
         GiveXP(XP, NULL);
@@ -18280,6 +18388,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
     _LoadMailAsynch(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_MAIL));
 
     _LoadInventory(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_INVENTORY), time_diff);
+    sDsyMiscMgr->LoadDsyPlayerInfos(this);
 
     // update items with duration and realtime
     UpdateItemDuration(time_diff, true);
@@ -18421,6 +18530,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
         if (!HasAuraState((AuraStateType)m_spellInfo->CasterAuraState))
             aura->HandleAllEffects(itr->second, AURA_EFFECT_HANDLE_REAL, false);
     }
+    ApplyLegendLevelStats(GetToken(LEGEND_LEVEL), true);
     return true;
 }
 
@@ -19726,6 +19836,8 @@ void Player::SaveToDB(bool create, bool logout)
     GetSession()->SaveTutorialsData(trans);                 // changed only while character in game
     _SaveGlyphs(trans);
     _SaveInstanceTimeRestrictions(trans);
+
+    sDsyMiscMgr->SaveDsyPlayerInfos(this, trans);
 
     // check if stats should only be saved on logout
     // save stats can be out of transaction

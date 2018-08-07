@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -348,6 +348,15 @@ void Item::SaveToDB(SQLTransaction& trans)
                 stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_GIFT_OWNER);
                 stmt->setUInt32(0, GUID_LOPART(GetOwnerGUID()));
                 stmt->setUInt32(1, guid);
+                trans->Append(stmt);
+            }
+
+            if (IsStone())
+            {
+                stmt = CharacterDatabase.GetPreparedStatement(uState == ITEM_NEW ? CHAR_REP_ITEM_INSTANCE : CHAR_UPD_ITEM_INSTANCE);
+                stmt->setUInt32(0, ToStone()->GetLevel());
+                stmt->setUInt32(1, ToStone()->GetGrade());
+                stmt->setUInt32(2, guid);
                 trans->Append(stmt);
             }
             break;

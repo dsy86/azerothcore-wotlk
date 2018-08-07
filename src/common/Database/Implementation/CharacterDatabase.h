@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 
  *
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
@@ -491,6 +491,19 @@ enum CharacterDatabaseStatements
     CHAR_SEL_PVPSTATS_FACTIONS_OVERALL,
 
     CHAR_INS_DESERTER_TRACK,
+
+    // token
+    CHAR_SEL_CHARACTER_TOKEN,
+    CHAR_REP_CHARACTER_TOKEN,
+
+    // difficulty
+    CHAR_SEL_CHARACTER_DIFFICULTY,
+    CHAR_REP_CHARACTER_DIFFICULTY,
+    CHAR_REP_GROUP_DIFFICULTY,
+    CHAR_UPD_GROUP_CUSTOMDIFFICULTY,
+    CHAR_REP_STONE_INSTANCE,
+    CHAR_UPD_STONE_INSTANCE,
+
 
     MAX_CHARACTERDATABASE_STATEMENTS
 };

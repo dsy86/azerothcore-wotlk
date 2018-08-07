@@ -12,6 +12,7 @@
 #include "LootMgr.h"
 #include "QueryResult.h"
 #include "SharedDefines.h"
+#include "LegendLevel.h"
 
 class Battlefield;
 class Battleground;
@@ -343,5 +344,15 @@ class Group
         // Xinef: change difficulty prevention
         uint32 _difficultyChangePreventionTime;
         DifficultyPreventionChangeType _difficultyChangePreventionType;
+
+    public:
+        uint32 GetSelectedDifficulty()
+        {
+            return m_selectedDifficulty;
+        }
+        void SetSelectedDifficulty(uint32 value);
+    private:
+        uint32 m_selectedDifficulty = 0;
+
 };
 #endif

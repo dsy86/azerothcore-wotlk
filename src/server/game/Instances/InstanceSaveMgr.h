@@ -47,7 +47,7 @@ class InstanceSave
     friend class InstanceSaveManager;
     public:
 
-        InstanceSave(uint16 MapId, uint32 InstanceId, Difficulty difficulty, time_t resetTime, time_t extendedResetTime);
+        InstanceSave(uint16 MapId, uint32 InstanceId, Difficulty difficulty, time_t resetTime, time_t extendedResetTime, uint32 customDifficulty);
         ~InstanceSave();
         uint32 GetInstanceId() const { return m_instanceid; }
         uint32 GetMapId() const { return m_mapid; }
@@ -92,6 +92,19 @@ class InstanceSave
         uint32 m_completedEncounterMask;
 
         ACE_Thread_Mutex _lock;
+
+    private:
+        uint32 m_customDifficulty;
+    public:
+        uint32 GetCustomDifficulty()
+        {
+            return m_customDifficulty;
+        }
+        void SetCustomDifficulty(uint32 value)
+        {
+            m_customDifficulty = value;
+        }
+
 };
 
 typedef UNORDERED_MAP<uint32 /*PAIR32(map, difficulty)*/, time_t /*resetTime*/> ResetTimeByMapDifficultyMap;
@@ -156,7 +169,7 @@ class InstanceSaveManager
 
         void Update();
 
-        InstanceSave* AddInstanceSave(uint32 mapId, uint32 instanceId, Difficulty difficulty, bool startup = false);
+        InstanceSave* AddInstanceSave(uint32 mapId, uint32 instanceId, Difficulty difficulty, uint32 customDifficulty, bool startup = false);
         bool DeleteInstanceSaveIfNeeded(uint32 InstanceId, bool skipMapCheck);
         bool DeleteInstanceSaveIfNeeded(InstanceSave* save, bool skipMapCheck);
 

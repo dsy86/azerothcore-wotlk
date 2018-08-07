@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 
  *
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
@@ -83,4 +83,7 @@ void LoginDatabaseConnection::DoPrepareStatements()
     PrepareStatement(LOGIN_SEL_AUTOBROADCAST, "SELECT id, weight, text FROM autobroadcast WHERE realmid = ? OR realmid = -1", CONNECTION_SYNCH);
     PrepareStatement(LOGIN_INS_ACCOUNT_MUTE, "INSERT INTO account_muted VALUES (?, UNIX_TIMESTAMP(), ?, ?, ?)", CONNECTION_ASYNC);
     PrepareStatement(LOGIN_SEL_ACCOUNT_MUTE_INFO, "SELECT mutedate, mutetime, mutereason, mutedby FROM account_muted WHERE guid = ? ORDER BY mutedate ASC", CONNECTION_SYNCH);
+    PrepareStatement(LOGIN_SEL_ACCOUNT_TOKEN, "SELECT id, tokenId, value FROM _account_token WHERE id = ? ORDER BY id ASC,tokenId ASC", CONNECTION_SYNCH);
+    PrepareStatement(LOGIN_REP_ACCOUNT_TOKEN, "REPLACE INTO _account_token (id,tokenId,value) VALUES (?,?,?)", CONNECTION_ASYNC);
+    PrepareStatement(LOGIN_INS_TOKEN_LOG, "INSERT INTO _token_log (guid,tokenId,addValue,sourceValue,reason) VALUES (?,?,?,?,?)", CONNECTION_ASYNC);
 }

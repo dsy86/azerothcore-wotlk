@@ -133,6 +133,7 @@ Map* MapInstanced::CreateInstanceForPlayer(const uint32 mapId, Player* player)
     else
     {
         Difficulty realdiff = player->GetDifficulty(IsRaid());
+        uint32 selectedDiff = player->GetGroup() ? player->GetGroup()->GetSelectedDifficulty() : player->GetSelectedDifficulty(); 
         uint32 destInstId = sInstanceSaveMgr->PlayerGetDestinationInstanceId(player, GetId(), realdiff);
 
         if (destInstId)
@@ -142,7 +143,7 @@ Map* MapInstanced::CreateInstanceForPlayer(const uint32 mapId, Player* player)
 
             map = FindInstanceMap(destInstId);
             if (!map)
-                map = CreateInstance(destInstId, pSave, realdiff);
+                map = CreateInstance(destInstId, pSave, realdiff, selectedDiff);
             else if (IsSharedDifficultyMap(mapId) && !map->HavePlayers() && map->GetDifficulty() != realdiff)
             {
                 if (player->isBeingLoaded()) // pussywizard: crashfix (assert(passengers.empty) fail in ~transport), could be added to a transport during loading from db
@@ -155,7 +156,7 @@ Map* MapInstanced::CreateInstanceForPlayer(const uint32 mapId, Player* player)
                     if (i->first == destInstId)
                     {
                         DestroyInstance(i);
-                        map = CreateInstance(destInstId, pSave, realdiff);
+                        map = CreateInstance(destInstId, pSave, realdiff, selectedDiff);
                         break;
                     }
             }
@@ -165,14 +166,13 @@ Map* MapInstanced::CreateInstanceForPlayer(const uint32 mapId, Player* player)
             uint32 newInstanceId = sMapMgr->GenerateInstanceId();
             ASSERT(!FindInstanceMap(newInstanceId)); // pussywizard: instance with new id can't exist
             Difficulty diff = player->GetGroup() ? player->GetGroup()->GetDifficulty(IsRaid()) : player->GetDifficulty(IsRaid());
-            map = CreateInstance(newInstanceId, NULL, diff);
+            map = CreateInstance(newInstanceId, NULL, diff, selectedDiff);
         }
     }
-
     return map;
 }
 
-InstanceMap* MapInstanced::CreateInstance(uint32 InstanceId, InstanceSave* save, Difficulty difficulty)
+InstanceMap* MapInstanced::CreateInstance(uint32 InstanceId, InstanceSave* save, Difficulty difficulty, uint32 customDifficulty)
 { 
     // load/create a map
     TRINITY_GUARD(ACE_Thread_Mutex, Lock);
@@ -197,8 +197,9 @@ InstanceMap* MapInstanced::CreateInstance(uint32 InstanceId, InstanceSave* save,
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)
     sLog->outDebug(LOG_FILTER_MAPS, "MapInstanced::CreateInstance: %s map instance %d for %d created with difficulty %s", save?"":"new ", InstanceId, GetId(), difficulty?"heroic":"normal");
 #endif
-
-    InstanceMap* map = new InstanceMap(GetId(), InstanceId, difficulty, this);
+    if (save)
+        customDifficulty = save->GetCustomDifficulty();
+    InstanceMap* map = new InstanceMap(GetId(), InstanceId, difficulty, this, customDifficulty);
     ASSERT(map->IsDungeon());
 
     map->LoadRespawnTimes();
@@ -209,7 +210,7 @@ InstanceMap* MapInstanced::CreateInstance(uint32 InstanceId, InstanceSave* save,
         map->CreateInstanceScript(false, "", 0);
 
     if (!save) // this is for sure a dungeon (assert above), no need to check here
-        sInstanceSaveMgr->AddInstanceSave(GetId(), InstanceId, difficulty);
+        sInstanceSaveMgr->AddInstanceSave(GetId(), InstanceId, difficulty, customDifficulty);
 
     m_InstancedMaps[InstanceId] = map;
     return map;

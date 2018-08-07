@@ -46,7 +46,7 @@ InstanceSaveManager::~InstanceSaveManager()
 /*
 - adding instance into manager
 */
-InstanceSave* InstanceSaveManager::AddInstanceSave(uint32 mapId, uint32 instanceId, Difficulty difficulty, bool startup /*=false*/)
+InstanceSave* InstanceSaveManager::AddInstanceSave(uint32 mapId, uint32 instanceId, Difficulty difficulty, uint32 customDifficulty, bool startup /*=false*/)
 {
     ASSERT(!GetInstanceSave(instanceId));
 
@@ -80,7 +80,7 @@ InstanceSave* InstanceSaveManager::AddInstanceSave(uint32 mapId, uint32 instance
         resetTime = time(NULL) + 3*DAY; // normals expire after 3 days even if someone is still bound to them, cleared on startup
         extendedResetTime = 0;
     }
-    InstanceSave* save = new InstanceSave(mapId, instanceId, difficulty, resetTime, extendedResetTime);
+    InstanceSave* save = new InstanceSave(mapId, instanceId, difficulty, resetTime, extendedResetTime, customDifficulty);
     if (!startup)
         save->InsertToDB();
 
@@ -125,8 +125,8 @@ bool InstanceSaveManager::DeleteInstanceSaveIfNeeded(InstanceSave* save, bool sk
     return false;
 }
 
-InstanceSave::InstanceSave(uint16 MapId, uint32 InstanceId, Difficulty difficulty, time_t resetTime, time_t extendedResetTime)
-: m_resetTime(resetTime), m_extendedResetTime(extendedResetTime), m_instanceid(InstanceId), m_mapid(MapId), m_difficulty(IsSharedDifficultyMap(MapId) ? Difficulty(difficulty%2) : difficulty), m_canReset(true), m_instanceData(""), m_completedEncounterMask(0)
+InstanceSave::InstanceSave(uint16 MapId, uint32 InstanceId, Difficulty difficulty, time_t resetTime, time_t extendedResetTime, uint32 customDifficulty)
+: m_resetTime(resetTime), m_extendedResetTime(extendedResetTime), m_instanceid(InstanceId), m_mapid(MapId), m_difficulty(IsSharedDifficultyMap(MapId) ? Difficulty(difficulty%2) : difficulty), m_canReset(true), m_instanceData(""), m_completedEncounterMask(0), m_customDifficulty(customDifficulty)
 {
 }
 
@@ -162,6 +162,7 @@ void InstanceSave::InsertToDB()
     stmt->setUInt8(3, uint8(GetDifficulty()));
     stmt->setUInt32(4, completedEncounters);
     stmt->setString(5, data);
+    stmt->setUInt32(6, m_customDifficulty);
     CharacterDatabase.Execute(stmt);
 }
 
@@ -310,7 +311,7 @@ void InstanceSaveManager::LoadResetTimes()
 
 void InstanceSaveManager::LoadInstanceSaves()
 {
-    QueryResult result = CharacterDatabase.Query("SELECT id, map, resettime, difficulty, completedEncounters, data FROM instance ORDER BY id ASC");
+    QueryResult result = CharacterDatabase.Query("SELECT id, map, resettime, difficulty, completedEncounters, data, customDifficulty FROM instance ORDER BY id ASC");
     if (result)
     {
         do
@@ -323,11 +324,12 @@ void InstanceSaveManager::LoadInstanceSaves()
             uint8 difficulty = fields[3].GetUInt8();
             uint32 completedEncounters = fields[4].GetUInt32();
             std::string instanceData = fields[5].GetString();
+            uint32 customDifficulty = fields[6].GetUInt32();
 
             // Mark instance id as being used
             sMapMgr->RegisterInstanceId(instanceId);
 
-            InstanceSave* save = AddInstanceSave(mapId, instanceId, Difficulty(difficulty), true);
+            InstanceSave* save = AddInstanceSave(mapId, instanceId, Difficulty(difficulty), customDifficulty, true);
             if (save)
             {
                 save->SetCompletedEncounterMask(completedEncounters);
