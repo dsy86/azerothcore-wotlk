@@ -10,6 +10,7 @@ struct TokenTemplate
     bool charOrAccount;
     string name;
     string desc;
+    uint32 minValue;
     uint32 defaultValue;
     uint32 maxValue;
 };
@@ -51,6 +52,7 @@ public:
     string Desc();
     uint32 Get() const;
     uint32 GetMin();
+    uint32 GetDefault();
     uint32 GetMax();
     bool IsAccountToken();
     void Set(uint32 value, string reason = "");

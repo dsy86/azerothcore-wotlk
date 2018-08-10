@@ -253,7 +253,6 @@ void Stone::ApplyStoneStats(bool apply, Player* forplayer/* = nullptr*/)
     m_statsApplied = apply;
 }
 
-
 bool Stone::LoadFromDB(uint32 guid, uint64 owner_guid, Field* fields, uint32 entry)
 {
     if (!Item::LoadFromDB(guid, owner_guid, fields, entry))

@@ -62,6 +62,12 @@ uint32 Token::Get() const
 uint32 Token::GetMin()
 {
     if (GetTemplate())
+        return GetTemplate()->minValue;
+    return 0;
+}
+uint32 Token::GetDefault()
+{
+    if (GetTemplate())
         return GetTemplate()->defaultValue;
     return 0;
 }
@@ -116,8 +122,8 @@ TokenTemplate const* Token::GetTemplate()
 void TokenMgr::LoadTokenTemplate()
 {
     uint32 oldMSTime = getMSTime();
-    //                                                0    1               2      3      4             5
-    QueryResult result = WorldDatabase.Query("SELECT `id`,`charOrAccount`,`name`,`desc`,`defaultValue`,`maxValue` FROM _token_template");
+    //                                                0    1               2      3      4         5              6
+    QueryResult result = WorldDatabase.Query("SELECT `id`,`charOrAccount`,`name`,`desc`,`minValue`,`defaultValue`,`maxValue` FROM _token_template");
     if (!result)
     {
         sLog->outString(">> Loaded 0 token templates. DB table `_token_template` is empty.");
@@ -137,8 +143,9 @@ void TokenMgr::LoadTokenTemplate()
         data.charOrAccount  = fields[1].GetBool();
         data.name           = fields[2].GetString();
         data.desc           = fields[3].GetString();
-        data.defaultValue   = fields[4].GetUInt32();
-        data.maxValue       = fields[5].GetUInt32();
+        data.minValue       = fields[4].GetUInt32();
+        data.defaultValue   = fields[5].GetUInt32();
+        data.maxValue       = fields[6].GetUInt32();
         ++count;
     } while (result->NextRow());
 
