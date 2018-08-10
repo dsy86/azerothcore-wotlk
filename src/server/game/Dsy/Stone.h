@@ -1,10 +1,8 @@
 ﻿#ifndef TRINITY_STONE_H
 #define TRINITY_STONE_H
 
-#include "Common.h"
-#include "ItemPrototype.h"
 #include "Item.h"
-#include "DsyMiscMgr.h"
+#include "ItemPrototype.h"
 
 
 struct StoneLevelInfo
@@ -44,25 +42,13 @@ enum ErrorReason
 class Stone : public Item
 {
 public:
-    Stone() : m_level(1), m_grade(1), m_statsApplied(false) {} 
+    Stone() : m_level(1), m_grade(1), m_statsApplied(false) {}
+    ~Stone() {}
+
     bool AddLevel();
     bool AddGrade();
-    void SetLevel(uint32 level) 
-    { 
-        if (m_level == level) return;
-        ApplyStoneStats(false);
-        m_level = level;
-        ApplyStoneStats(true);
-        SetState(ITEM_CHANGED);
-    }
-    void SetGrade(uint32 grade) 
-    { 
-        if (m_grade == grade) return;
-        ApplyStoneStats(false);
-        m_grade = grade;
-        ApplyStoneStats(true);
-        SetState(ITEM_CHANGED);
-    }
+    void SetLevel(uint32 level);
+    void SetGrade(uint32 grade);
     const uint32 GetLevel() const { return m_level; }
     const uint32 GetGrade() const { return m_grade; }
     bool CanAddLevel();

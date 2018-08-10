@@ -57,10 +57,8 @@ class Bag : public Item
 
 inline Item* NewItemOrBag(ItemTemplate const* proto)
 {
-    if (proto->IsStone())
-        return new Stone;
-
-    return (proto->InventoryType == INVTYPE_BAG) ? new Bag : new Item;
+    return proto->IsStone() ? new Stone : ((proto->InventoryType == INVTYPE_BAG) ? new Bag : new Item);
 }
 #endif
+
 

@@ -186,6 +186,24 @@ bool Stone::AddGrade()
     return false;
 }
 
+void Stone::SetLevel(uint32 level)
+{
+    if (m_level == level) return;
+    ApplyStoneStats(false);
+    m_level = level;
+    ApplyStoneStats(true);
+    SetState(ITEM_CHANGED);
+}
+
+void Stone::SetGrade(uint32 grade)
+{
+    if (m_grade == grade) return;
+    ApplyStoneStats(false);
+    m_grade = grade;
+    ApplyStoneStats(true);
+    SetState(ITEM_CHANGED);
+}
+
 uint32 Stone::GetStatValue(ItemModType statType)
 {
     float value = 0;
