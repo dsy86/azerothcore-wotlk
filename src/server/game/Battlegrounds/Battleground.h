@@ -250,6 +250,12 @@ enum BattlegroundStartingEventsIds
 };
 #define BG_STARTING_EVENT_COUNT 4
 
+struct RewardItems
+{
+    uint32 item;
+    uint32 count;
+};
+
 struct BattlegroundScore
 {
     BattlegroundScore(Player* player) : KillingBlows(0), Deaths(0), HonorableKills(0), BonusHonor(0),
@@ -749,5 +755,27 @@ class Battleground
         float m_TeamStartLocO[BG_TEAMS_COUNT];
         float m_StartMaxDist;
         uint32 ScriptId;
+
+    public:
+        RewardItems GetWinnerItems() const { return m_winnerItems; }
+        RewardItems GetLoserItems() const { return m_loserItems; }
+        uint32 GetMinDmgOrHealing() const { return m_minDmgOrHealing; }
+        void SetRewardItems(uint32 winnerItem, uint32 winnerItemCount, uint32 loserItem, uint32 loserItemCount)
+        {
+            m_winnerItems.item = winnerItem;
+            m_winnerItems.count = winnerItemCount;
+            m_loserItems.item = loserItem;
+            m_loserItems.count = loserItemCount;
+        }
+        void SetMinDmgOrHealing(uint32 value)
+        {
+            m_minDmgOrHealing = value;
+        }
+        void RewardItem(TeamId winner);
+
+    private:
+        uint32 m_minDmgOrHealing;
+        RewardItems m_winnerItems;
+        RewardItems m_loserItems;
 };
 #endif

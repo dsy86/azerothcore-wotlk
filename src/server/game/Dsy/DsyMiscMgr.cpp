@@ -32,6 +32,44 @@ std::string DsyMiscMgr::GetItemName(uint32 entry)
     return "[" + name + "]";
 }
 
+std::string DsyMiscMgr::ClassColor(uint8 playerClass)
+{
+    switch (playerClass)
+    {
+    case 1: return "C79C6E"; // Warrior
+    case 2: return "F58CBA"; // Paladin
+    case 3: return "ABD473"; // Hunter
+    case 4: return "FFF569"; // Rogue
+    case 5: return "FFFFFF"; // Priest
+    case 6: return "C41F3B"; // Death Knight
+    case 7: return "0070DE"; // Shaman
+    case 8: return "69CCF0"; // Mage
+    case 9: return "9482C9"; // Warlock
+    case 10: return"00FF96"; // Monk
+    case 11: return"FF7d0A";   // Druid
+    }
+    return "";
+}
+std::string DsyMiscMgr::FactionName(TeamId faction)
+{
+    switch (faction)
+    {
+    case TEAM_ALLIANCE:
+        return "[联盟]";
+        break;
+    case TEAM_HORDE:
+        return "[部落]";
+        break;
+    case TEAM_NEUTRAL:
+        return "[中立]";
+        break;
+    default:
+        break;
+    }
+    return "";
+}
+
+
 void Player::SendMsgHint(std::string msg, bool posstive/* = true*/)
 {
     if (msg.length() > 0)

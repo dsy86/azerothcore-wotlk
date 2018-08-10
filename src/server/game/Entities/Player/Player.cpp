@@ -6153,32 +6153,29 @@ void Player::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
     if (cr == CR_HASTE_MELEE || cr == CR_HASTE_RANGED || cr == CR_HASTE_SPELL)
     {
         float const mult = GetRatingMultiplier(cr);
-        float const oldVal = oldRating * mult;
-        float const newVal = m_baseRatingValue[cr] * mult;
-        float oldVal2 = oldVal;
-        float newVal2 = newVal;
+        float oldVal = oldRating * mult;
+        float newVal = m_baseRatingValue[cr] * mult;
         if (sWorld->getBoolConfig(CONFIG_STATS_LIMITS_ENABLE))
         {
             float hasteLimit = sWorld->getFloatConfig(CONFIG_STATS_LIMITS_HASTE);
-            oldVal2 = oldVal2 > hasteLimit ? hasteLimit : oldVal2;
-            newVal2 = newVal2 > hasteLimit ? hasteLimit : newVal2;
+            oldVal = oldVal > hasteLimit ? hasteLimit : oldVal;
+            newVal = newVal > hasteLimit ? hasteLimit : newVal;
         }
-
         switch (cr)
         {
             case CR_HASTE_MELEE:
-                ApplyAttackTimePercentMod(BASE_ATTACK, oldVal2, false);
-                ApplyAttackTimePercentMod(OFF_ATTACK, oldVal2, false);
-                ApplyAttackTimePercentMod(BASE_ATTACK, newVal2, true);
-                ApplyAttackTimePercentMod(OFF_ATTACK, newVal2, true);
+                ApplyAttackTimePercentMod(BASE_ATTACK, oldVal, false);
+                ApplyAttackTimePercentMod(OFF_ATTACK, oldVal, false);
+                ApplyAttackTimePercentMod(BASE_ATTACK, newVal, true);
+                ApplyAttackTimePercentMod(OFF_ATTACK, newVal, true);
                 break;
             case CR_HASTE_RANGED:
-                ApplyAttackTimePercentMod(RANGED_ATTACK, oldVal2, false);
-                ApplyAttackTimePercentMod(RANGED_ATTACK, newVal2, true);
+                ApplyAttackTimePercentMod(RANGED_ATTACK, oldVal, false);
+                ApplyAttackTimePercentMod(RANGED_ATTACK, newVal, true);
                 break;
             case CR_HASTE_SPELL:
-                ApplyCastTimePercentMod(oldVal2, false);
-                ApplyCastTimePercentMod(newVal2, true);
+                ApplyCastTimePercentMod(oldVal, false);
+                ApplyCastTimePercentMod(newVal, true);
                 break;
             default: 
                 break;
@@ -8958,7 +8955,7 @@ void Player::_RemoveAllItemMods()
         }
     }
 
-    for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
     {
         if (m_items[i])
         {
@@ -8971,7 +8968,7 @@ void Player::_RemoveAllItemMods()
         }
     }
 
-    for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
         if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
         {
@@ -9043,7 +9040,7 @@ void Player::_ApplyAllItemMods()
         }
     }
 
-    for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
     {
         if (m_items[i])
         {
@@ -9056,7 +9053,7 @@ void Player::_ApplyAllItemMods()
         }
     }
 
-    for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
         if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
         {

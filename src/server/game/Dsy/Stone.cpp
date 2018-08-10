@@ -1,6 +1,5 @@
 ﻿#pragma execution_character_set("UTF-8")
 #include "Stone.h"
-#include "ObjectMgr.h"
 #include "Player.h"
 
 

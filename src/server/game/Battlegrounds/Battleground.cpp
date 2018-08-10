@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -192,6 +192,13 @@ Battleground::Battleground()
 
     // pussywizard:
     m_UpdateTimer = 0;
+
+    m_minDmgOrHealing = 0;
+    m_winnerItems.item = 0;
+    m_winnerItems.count = 0;
+    m_loserItems.item = 0;
+    m_loserItems.count = 0;
+
 }
 
 Battleground::~Battleground()
@@ -585,7 +592,9 @@ inline void Battleground::_ProcessJoin(uint32 diff)
             {
                 itr->second->RemoveAurasDueToSpell(SPELL_PREPARATION);
                 itr->second->ResetAllPowers();
-                //����ˢ��һ�£�����Ѻ�״̬��ɵж�״̬
+                string msg = "战斗开始！你需要在此战场至少制造" + to_string(GetMinDmgOrHealing()) + "点伤害或治疗，才可以获得战斗奖励。";
+                ChatHandler(itr->second->GetSession()).PSendSysMessage(msg.c_str());
+                //dsy: 互相刷新一下，会从友好状态变成敌对状态
                 for (BattlegroundPlayerMap::const_iterator itr2 = GetPlayers().begin(); itr2 != GetPlayers().end(); ++itr2)
                 {
                     if (itr->second == itr2->second)
@@ -996,6 +1005,8 @@ void Battleground::EndBattleground(TeamId winnerTeamId)
         sScriptMgr->OnBattlegroundEndReward(this, player, winnerTeamId);
 
         // Reward winner team
+        if (!isArena())
+            RewardItem(winnerTeamId);
         if (bgTeamId == winnerTeamId)
         {
             if (player->IsCurrentBattlegroundRandom() || BattlegroundMgr::IsBGWeekend(GetBgTypeID()))
@@ -1154,7 +1165,8 @@ void Battleground::RemovePlayerAtLeave(Player* player)
         SendPacketToTeam(teamId, &data, player, false);
 
         // cast deserter
-        if (isBattleground() && !player->IsGameMaster() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_CAST_DESERTER) && isAlive)//������û�������߱��
+        //dsy: 死的人没有逃亡者标记
+        if (isBattleground() && !player->IsGameMaster() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_CAST_DESERTER) && isAlive)
             if (GetStatus() == STATUS_IN_PROGRESS || GetStatus() == STATUS_WAIT_JOIN)
                 player->ScheduleDelayedOperation(DELAYED_SPELL_CAST_DESERTER);
     }
@@ -1274,7 +1286,7 @@ void Battleground::AddPlayer(Player* player)
 
     // setup BG group membership
     PlayerAddedToBGCheckIfBGIsRunning(player);
-    //ս���������ģ����ü��뵽ͬһ���Ŷ���
+    //dsy: 战场里各玩各的，不让加入到同一个团队中
     //AddOrSetPlayerToCorrectBgGroup(player, teamId);
 
     sScriptMgr->OnBattlegroundAddPlayer(this, player);
@@ -1961,4 +1973,40 @@ void Battleground::RewardXPAtKill(Player* killer, Player* victim)
 uint8 Battleground::GetUniqueBracketId() const
 {
     return GetMinLevel() / 10;
+}
+
+void Battleground::RewardItem(TeamId winner)
+{
+    for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    {
+
+        Player *player = itr->second;
+        if (!player)
+            continue;
+
+        TeamId team = player->GetTeamId();
+        uint32 item = GetLoserItems().item;
+        uint32 count = GetLoserItems().count;
+        string msg = "您的队伍失利了，您获得了失利方奖励品";
+        if (team == winner)
+        {
+            uint32 item = GetWinnerItems().item;
+            uint32 count = GetWinnerItems().count;
+            msg = "恭喜！您的队伍胜利了，您获得了胜利方奖励品！";
+        }
+        if (item == 0 || count == 0)
+            return;
+
+        BattlegroundScoreMap::const_iterator itr2 = PlayerScores.find(player->GetGUID());
+        if (itr2 != PlayerScores.end() && (itr2->second->DamageDone + itr2->second->HealingDone) > GetMinDmgOrHealing())// dsy: dmg and healing below limit
+        {
+            player->SendMsgHint(msg);
+            player->AddItem(item, count); 
+        }
+        else
+        {
+            string msg2 = "你在本场战斗中的伤害或者治疗必须达到" + to_string(GetMinDmgOrHealing()) + "点，才可以获得战斗奖励。";
+            player->SendMsgHint(msg2);
+        }
+    }
 }

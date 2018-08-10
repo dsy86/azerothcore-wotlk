@@ -22,6 +22,8 @@ public:
     friend class ACE_Singleton<DsyMiscMgr, ACE_Null_Mutex>;
     std::string GetItemLink(uint32 entry, bool noColor = false);
     std::string GetItemName(uint32 entry);
+    std::string ClassColor(uint8 playerClass);
+    std::string FactionName(TeamId faction);
     std::string ShowImage(std::string name, uint32 width = 24, uint32 height = 24, uint32 x = 0, uint32 y = 0) const;
     std::string goldIcon = ShowImage("MONEYFRAME/UI-GoldIcon", 12, 12);
     std::string FFButton = ShowImage("TIMEMANAGER/FFButton");

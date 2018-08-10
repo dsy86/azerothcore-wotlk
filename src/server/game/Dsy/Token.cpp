@@ -146,6 +146,43 @@ void TokenMgr::LoadTokenTemplate()
     sLog->outString();
 }
 
+void TokenMgr::LoadItemAddTokenTable()
+{
+    uint32 oldMSTime = getMSTime();
+    //                                                0    1               2      3      4             5
+    QueryResult result = WorldDatabase.Query("SELECT `entry`,`tokenType`,`addValue` FROM _item_add_token");
+    if (!result)
+    {
+        sLog->outString(">> Loaded 0 token templates. DB table `_item_add_token` is empty.");
+        sLog->outString();
+        return;
+    }
+    uint32 count = 0;
+    do
+    {
+        Field* fields = result->Fetch();
+
+        AddTokenItems data;
+        uint32 entry = fields[0].GetUInt32();
+        data.entry = entry;
+        data.tokenType = fields[1].GetUInt32();
+        data.addValue = fields[2].GetUInt32();
+        m_addTokenItemsStore[entry] = data;
+        ++count;
+    } while (result->NextRow());
+
+    sLog->outString(">> Loaded %u add token items in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    sLog->outString();
+}
+
+AddTokenItems const* TokenMgr::GetAddTokenItems(uint32 entry)
+{
+    AddTokenItemsContainer::const_iterator it = m_addTokenItemsStore.find(entry);
+    if (it != m_addTokenItemsStore.end())
+        return &(it->second);
+    return nullptr;
+}
+
 void Player::LoadToken()
 {
     TokenTemplateStore allToken = sTokenMgr->GetAllTokens();

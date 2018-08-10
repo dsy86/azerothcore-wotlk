@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
  * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -12,6 +12,7 @@
 #include "DatabaseEnv.h"
 #include "AccountMgr.h"
 #include "Player.h"
+#include "DsyMiscMgr.h"
 
 Channel::Channel(std::string const& name, uint32 channelId, uint32 channelDBId, TeamId teamId, bool announce, bool ownership):
     _announce(announce),
@@ -786,16 +787,24 @@ void Channel::Say(uint64 guid, std::string const& what, uint32 lang)
         else if (playersStore.size() >= 10)
             speakDelay = 5;
 
+        speakDelay = 5;
         if (!pinfo.IsAllowedToSpeak(speakDelay))
         {
             std::string timeStr = secsToTimeString(pinfo.lastSpeakTime + speakDelay - sWorld->GetGameTime());
             if (_channelRights.speakMessage.length() > 0)
                 player->GetSession()->SendNotification("%s", _channelRights.speakMessage.c_str());
-            player->GetSession()->SendNotification("You must wait %s before speaking again.", timeStr.c_str());
+            player->GetSession()->SendNotification("你说话太快了！%s秒后可再次发言", timeStr.c_str());
             return;
         }
     }
 
+    if (player)
+    {
+        string msg = "|cff7DFF00[世界频道]" + sDsyMiscMgr->FactionName(player->GetTeamId()) + "[巅峰" + to_string(player->GetToken(LEGEND_LEVEL)) + "级]" + "|Hplayer:" + player->GetName() + "|h[|r|cFF" + sDsyMiscMgr->ClassColor(player->getClass()) + player->GetName() + "|r|cff7DFF00]|h: " + msg + "|r";
+        sWorld->SendServerMessage(SERVER_MSG_STRING, msg.c_str());
+    }
+    // dsy: world chat use worldchat script, ignore original channel chat
+    return;
     WorldPacket data;
     if (player)
         ChatHandler::BuildChatPacket(data, CHAT_MSG_CHANNEL, Language(lang), player, player, what, 0, _name);

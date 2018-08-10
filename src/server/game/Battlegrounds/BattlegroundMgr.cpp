@@ -570,6 +570,8 @@ bool BattlegroundMgr::CreateBattleground(CreateBattlegroundData& data)
     bg->SetStartMaxDist(data.StartMaxDist);
     bg->SetLevelRange(data.LevelMin, data.LevelMax);
     bg->SetScriptId(data.scriptId);
+    bg->SetRewardItems(data.WinnerItems.item, data.WinnerItems.count, data.LoserItems.item, data.LoserItems.count);
+    bg->SetMinDmgOrHealing(data.MinDmgOrHealing);
 
     AddBattleground(bg);
 
@@ -579,8 +581,8 @@ bool BattlegroundMgr::CreateBattleground(CreateBattlegroundData& data)
 void BattlegroundMgr::CreateInitialBattlegrounds()
 {
     uint32 oldMSTime = getMSTime();
-    //                                               0   1                  2                  3       4       5                 6               7              8            9             10      11
-    QueryResult result = WorldDatabase.Query("SELECT ID, MinPlayersPerTeam, MaxPlayersPerTeam, MinLvl, MaxLvl, AllianceStartLoc, AllianceStartO, HordeStartLoc, HordeStartO, StartMaxDist, Weight, ScriptName FROM battleground_template");
+    //                                               0     1                    2                    3         4         5                   6                 7                8              9               10        11            12                 13            14                 15           16
+    QueryResult result = WorldDatabase.Query("SELECT a.ID, a.MinPlayersPerTeam, a.MaxPlayersPerTeam, a.MinLvl, a.MaxLvl, a.AllianceStartLoc, a.AllianceStartO, a.HordeStartLoc, a.HordeStartO, a.StartMaxDist, a.Weight, a.ScriptName, b.minDmgOrHealing, b.winnerItem, b.winnerItemCount, b.loserItem, b.loserItemCount FROM battleground_template a LEFT JOIN _battleground_reward b ON a.ID=b.id");
 
     if (!result)
     {
@@ -620,6 +622,11 @@ void BattlegroundMgr::CreateInitialBattlegrounds()
         data.scriptId = sObjectMgr->GetScriptId(fields[11].GetCString());
         data.BattlegroundName = bl->name[sWorld->GetDefaultDbcLocale()];
         data.MapID = bl->mapid[0];
+        data.MinDmgOrHealing = fields[12].GetUInt32();
+        data.WinnerItems.item = fields[13].GetUInt32();
+        data.WinnerItems.count = fields[14].GetUInt32();
+        data.LoserItems.item = fields[15].GetUInt32();
+        data.LoserItems.count = fields[16].GetUInt32();
 
         if (data.MaxPlayersPerTeam == 0 || data.MinPlayersPerTeam > data.MaxPlayersPerTeam)
         {

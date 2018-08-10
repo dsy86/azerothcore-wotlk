@@ -16,6 +16,15 @@ struct TokenTemplate
 
 typedef UNORDERED_MAP<uint32, TokenTemplate> TokenTemplateStore;
 
+struct AddTokenItems
+{
+    uint32 entry;
+    uint32 tokenType;
+    uint32 addValue;
+};
+
+typedef UNORDERED_MAP<uint32, AddTokenItems> AddTokenItemsContainer;
+
 enum TokenName
 {
     DIAMOND      = 1,
@@ -60,10 +69,12 @@ class TokenMgr
 public:
     friend class ACE_Singleton<TokenMgr, ACE_Null_Mutex>;
     void LoadTokenTemplate();
+    void LoadItemAddTokenTable();
     TokenTemplate const* GetTokenTemplate(uint32 entry)
     {
         return &m_tokenTemplateStore[entry];
     }
+    AddTokenItems const* GetAddTokenItems(uint32 entry);
     TokenTemplateStore const GetAllTokens()
     {
         return m_tokenTemplateStore;
@@ -71,6 +82,7 @@ public:
 
 private:
     TokenTemplateStore m_tokenTemplateStore;
+    AddTokenItemsContainer m_addTokenItemsStore;
 };
 
 #define sTokenMgr ACE_Singleton<TokenMgr, ACE_Null_Mutex>::instance()
