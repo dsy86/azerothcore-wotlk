@@ -1,6 +1,7 @@
 ﻿#pragma execution_character_set("UTF-8")
 #include "Stone.h"
 #include "Player.h"
+#include "DsyMiscMgr.h"
 
 
 void StoneMgr::LoadStoneLevelInfo(bool reload)
@@ -206,10 +207,112 @@ void Stone::SetGrade(uint32 grade)
 
 uint32 Stone::GetStatValue(ItemModType statType)
 {
+    return sStoneMgr->GetStatValue(statType, GetTemplate()->Quality, m_level, m_grade);
+}
+
+void Stone::ApplyStoneStats(bool apply, Player* forplayer/* = nullptr*/)
+{
+    if (apply == m_statsApplied) return;
+    if (apply)
+        sStoneMgr->AddToStoneStore(this);
+    else
+        sStoneMgr->DeleteFromStoneStore(GetGUIDLow());
+
+    if (forplayer == nullptr)
+    {
+        if (!GetOwner() || GetOwner()->GetTypeId() != TYPEID_PLAYER) return;
+        forplayer = GetOwner();
+    }
+    if (forplayer == nullptr) return;
+
+    forplayer->ApplyAddtionStats(ITEM_MOD_STRENGTH, GetStatValue(ITEM_MOD_STRENGTH), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_AGILITY, GetStatValue(ITEM_MOD_AGILITY), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_STAMINA, GetStatValue(ITEM_MOD_STAMINA), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_INTELLECT, GetStatValue(ITEM_MOD_INTELLECT), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_SPIRIT, GetStatValue(ITEM_MOD_SPIRIT), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_ATTACK_POWER, GetStatValue(ITEM_MOD_ATTACK_POWER), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_SPELL_POWER, GetStatValue(ITEM_MOD_SPELL_POWER), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_HASTE_RATING, GetStatValue(ITEM_MOD_HASTE_RATING), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_CRIT_RATING, GetStatValue(ITEM_MOD_CRIT_RATING), apply);
+    forplayer->ApplyAddtionStats(ITEM_MOD_HIT_RATING, GetStatValue(ITEM_MOD_HIT_RATING), apply);
+    m_statsApplied = apply;
+}
+
+std::string Stone::GetStoneStatString()
+{
+    std::string statString = "";
+    vector<ItemModType> statTypes = {
+        ITEM_MOD_STRENGTH,
+        ITEM_MOD_AGILITY,
+        ITEM_MOD_STAMINA,
+        ITEM_MOD_INTELLECT,
+        ITEM_MOD_SPIRIT,
+        ITEM_MOD_ATTACK_POWER,
+        ITEM_MOD_SPELL_POWER,
+        ITEM_MOD_HASTE_RATING,
+        ITEM_MOD_CRIT_RATING,
+        ITEM_MOD_HIT_RATING,
+    };
+    statString += "|n护身符属性：|n";
+    statString += to_string(GetLevel()) + "级 " + to_string(GetGrade()) + "阶";
+    for (uint32 i = 0; i < statTypes.size(); ++i)
+    {
+        if (GetStatValue(statTypes[i]))
+            statString += "|n+ " + to_string(GetStatValue(statTypes[i])) + " " + sDsyMiscMgr->StatName(statTypes[i]);
+    }
+    statString += "|n|n";
+    return statString;
+}
+
+bool Stone::LoadFromDB(uint32 guid, uint64 owner_guid, Field* fields, uint32 entry)
+{
+    if (!Item::LoadFromDB(guid, owner_guid, fields, entry))
+        return false;
+
+    SetLevel(fields[15].GetUInt32());
+    SetGrade(fields[16].GetUInt32());
+    //ApplyStoneStats(true); //在player那已经apply过了
+    sStoneMgr->AddToStoneStore(this);
+    return true;
+}
+
+void Stone::SaveToDB(SQLTransaction& trans)
+{
+    Item::SaveToDB(trans);
+}
+
+StoneLevelInfo const* StoneMgr::GetStoneLevelInfo(uint32 level)
+{
+    StoneLevelInfoMap::const_iterator it = m_stoneLevelInfo.find(level);
+
+    if (it != m_stoneLevelInfo.end())
+        return &(it->second);
+
+    if (level > 1)
+        return GetStoneLevelInfo(level - 1);
+
+    return GetStoneLevelInfo(1);
+}
+
+StoneGradeInfo const* StoneMgr::GetStoneGradeInfo(uint32 grade)
+{
+    StoneGradeInfoMap::const_iterator it = m_stoneGradeInfo.find(grade);
+
+    if (it != m_stoneGradeInfo.end())
+        return &(it->second);
+
+    if (grade > 1)
+        return GetStoneGradeInfo(grade - 1);
+
+    return GetStoneGradeInfo(1);
+}
+
+uint32 StoneMgr::GetStatValue(ItemModType statType, uint32 quality, uint32 level, uint32 grade)
+{
     float value = 0;
-	StoneLevelInfo const* levelInfo = sStoneMgr->GetStoneLevelInfo(m_level);
-	StoneGradeInfo const* gradeInfo = sStoneMgr->GetStoneGradeInfo(m_grade);
-    uint32 quality = GetTemplate()->Quality > 6 ? 0 : GetTemplate()->Quality;
+    StoneLevelInfo const* levelInfo = sStoneMgr->GetStoneLevelInfo(level);
+    StoneGradeInfo const* gradeInfo = sStoneMgr->GetStoneGradeInfo(grade);
+    quality = quality > 6 ? 0 : quality;
     switch (statType)
     {
     case ITEM_MOD_STRENGTH:                         //modify strength
@@ -248,67 +351,59 @@ uint32 Stone::GetStatValue(ItemModType statType)
     return static_cast<uint32>(value * gradeInfo->rate[quality]);
 }
 
-void Stone::ApplyStoneStats(bool apply, Player* forplayer/* = nullptr*/)
+void StoneMgr::AddToStoneStore(Stone * stone)
 {
-    if (apply == m_statsApplied) return; 
-    if (!forplayer)
+    m_stoneStore[stone->GetGUIDLow()] = stone;
+}
+
+Stone * StoneMgr::GetStone(uint32 guid)
+{
+    StoneContainer::const_iterator it = m_stoneStore.find(guid);
+    if (it != m_stoneStore.end())
+        return it->second;
+    return nullptr;
+}
+
+void StoneMgr::DeleteFromStoneStore(uint32 guid)
+{
+    StoneContainer::const_iterator it = m_stoneStore.find(guid);
+    if (it != m_stoneStore.end())
     {
-        if (!GetOwner() || GetOwner()->GetTypeId() != TYPEID_PLAYER) return;
-        forplayer = GetOwner();
+        m_stoneStore.erase(guid);
     }
-    if (!forplayer->IsInWorld()) return;
-
-    forplayer->ApplyAddtionStats(ITEM_MOD_STRENGTH, GetStatValue(ITEM_MOD_STRENGTH), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_AGILITY, GetStatValue(ITEM_MOD_AGILITY), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_STAMINA, GetStatValue(ITEM_MOD_STAMINA), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_INTELLECT, GetStatValue(ITEM_MOD_INTELLECT), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_SPIRIT, GetStatValue(ITEM_MOD_SPIRIT), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_ATTACK_POWER, GetStatValue(ITEM_MOD_ATTACK_POWER), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_SPELL_POWER, GetStatValue(ITEM_MOD_SPELL_POWER), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_HASTE_RATING, GetStatValue(ITEM_MOD_HASTE_RATING), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_CRIT_RATING, GetStatValue(ITEM_MOD_CRIT_RATING), apply);
-    forplayer->ApplyAddtionStats(ITEM_MOD_HIT_RATING, GetStatValue(ITEM_MOD_HIT_RATING), apply);
-    m_statsApplied = apply;
 }
 
-bool Stone::LoadFromDB(uint32 guid, uint64 owner_guid, Field* fields, uint32 entry)
+void Player::ApplyAllStoneStats(bool apply)
 {
-    if (!Item::LoadFromDB(guid, owner_guid, fields, entry))
-        return false;
+    for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
+        if (m_items[i])
+        {
+            ItemTemplate const *proto = m_items[i]->GetTemplate();
+            if (!proto)
+                continue;
+            if (!m_items[i]->IsStone())
+                continue;
+            m_items[i]->ToStone()->ApplyStoneStats(apply, this);
+        }
+    }
 
-    SetLevel(fields[15].GetUInt32());
-    SetGrade(fields[16].GetUInt32());
-    //ApplyStoneStats(true); //在player那已经apply过了
-    return true;
-}
-
-void Stone::SaveToDB(SQLTransaction& trans)
-{
-    Item::SaveToDB(trans);
-}
-
-StoneLevelInfo const* StoneMgr::GetStoneLevelInfo(uint32 level)
-{
-    StoneLevelInfoMap::const_iterator it = m_stoneLevelInfo.find(level);
-
-    if (it != m_stoneLevelInfo.end())
-        return &(it->second);
-
-    if (level > 1)
-        return GetStoneLevelInfo(level - 1);
-
-    return GetStoneLevelInfo(1);
-}
-
-StoneGradeInfo const* StoneMgr::GetStoneGradeInfo(uint32 grade)
-{
-    StoneGradeInfoMap::const_iterator it = m_stoneGradeInfo.find(grade);
-
-    if (it != m_stoneGradeInfo.end())
-        return &(it->second);
-
-    if (grade > 1)
-        return GetStoneGradeInfo(grade - 1);
-
-    return GetStoneGradeInfo(1);
+    for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
+        if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
+                if (m_items[j])
+                {
+                    ItemTemplate const *proto = m_items[j]->GetTemplate();
+                    if (!proto)
+                        continue;
+                    if (!m_items[j]->IsStone())
+                        continue;
+                    m_items[j]->ToStone()->ApplyStoneStats(apply, this);
+                }
+            }
+        }
+    }
 }

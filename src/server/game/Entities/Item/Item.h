@@ -230,6 +230,7 @@ class Item : public Object
 
         bool IsLocked() const { return !HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAG_UNLOCKED); }
         bool IsBag() const { return GetTemplate()->InventoryType == INVTYPE_BAG; }
+
         bool IsStone() const { return GetTemplate()->IsStone(); }
         Stone* ToStone() { if (IsStone()) return reinterpret_cast<Stone*>(this); else return NULL; }
         const Stone* ToStone() const { if (IsStone()) return reinterpret_cast<const Stone*>(this); else return NULL; }

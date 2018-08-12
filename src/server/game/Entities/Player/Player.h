@@ -3013,6 +3013,7 @@ class Player : public Unit, public GridObject<Player>
         void SaveDifficulty(SQLTransaction& trans);
         void ApplyAddtionStats(ItemModType statType, int32 val, bool apply);
         void ApplyLegendLevelStats(uint32 llevel, bool apply);
+        void ApplyAllStoneStats(bool apply);
 
     private:
         TokenMap m_tokens;

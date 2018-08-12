@@ -353,7 +353,7 @@ void Item::SaveToDB(SQLTransaction& trans)
 
             if (IsStone())
             {
-                stmt = CharacterDatabase.GetPreparedStatement(uState == ITEM_NEW ? CHAR_REP_ITEM_INSTANCE : CHAR_UPD_ITEM_INSTANCE);
+                stmt = CharacterDatabase.GetPreparedStatement(uState == ITEM_NEW ? CHAR_REP_STONE_INSTANCE : CHAR_UPD_STONE_INSTANCE);
                 stmt->setUInt32(0, ToStone()->GetLevel());
                 stmt->setUInt32(1, ToStone()->GetGrade());
                 stmt->setUInt32(2, guid);
@@ -441,6 +441,8 @@ bool Item::LoadFromDB(uint32 guid, uint64 owner_guid, Field* fields, uint32 entr
     std::string enchants = fields[6].GetString();
     _LoadIntoDataField(enchants.c_str(), ITEM_FIELD_ENCHANTMENT_1_1, MAX_ENCHANTMENT_SLOT * MAX_ENCHANTMENT_OFFSET);
     SetInt32Value(ITEM_FIELD_RANDOM_PROPERTIES_ID, fields[7].GetInt16());
+    // dsy: set random stats id to item guid for sending to client
+    SetInt32Value(ITEM_FIELD_RANDOM_PROPERTIES_ID, guid);
     // recalculate suffix factor
     if (GetItemRandomPropertyId() < 0)
         UpdateItemSuffixFactor();
@@ -604,6 +606,10 @@ int32 Item::GenerateItemRandomPropertyId(uint32 item_id)
 
 void Item::SetItemRandomProperties(int32 randomPropId)
 {
+    // dsy: set random stats id to item guid for sending to client
+    SetInt32Value(ITEM_FIELD_RANDOM_PROPERTIES_ID, GetGUIDLow());
+    SetState(ITEM_CHANGED, GetOwner());
+    return;
     if (!randomPropId)
         return;
 

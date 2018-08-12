@@ -56,6 +56,7 @@ public:
     uint32 GetStatValue(ItemModType statType);
     void ApplyStoneStats(bool apply, Player* forplayer = nullptr);
     bool GetStatApplyStatus() const { return m_statsApplied; }
+    std::string GetStoneStatString();
 
     // DB
     // overwrite virtual Item::SaveToDB
@@ -72,6 +73,8 @@ protected:
     ErrorReason m_addGradeReason;
 };
 
+typedef UNORDERED_MAP<uint32, Stone*> StoneContainer;
+
 class StoneMgr
 {
 public:
@@ -82,12 +85,17 @@ public:
     StoneGradeInfo const* GetStoneGradeInfo(uint32 grade);
     uint32 GetMaxLevel() const { return m_maxLevel; }
     uint32 GetMaxGrade() const { return m_maxGrade; }
+    uint32 GetStatValue(ItemModType statType, uint32 quality, uint32 level, uint32 grade);
+    void AddToStoneStore(Stone* stone);
+    Stone * GetStone(uint32 guid);
+    void DeleteFromStoneStore(uint32 guid);
 
 private:
     StoneLevelInfoMap m_stoneLevelInfo;
     StoneGradeInfoMap m_stoneGradeInfo;
     uint32 m_maxLevel;
     uint32 m_maxGrade;
+    StoneContainer m_stoneStore;
 };
 
 #define sStoneMgr ACE_Singleton<StoneMgr, ACE_Null_Mutex>::instance()

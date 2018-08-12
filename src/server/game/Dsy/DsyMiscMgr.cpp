@@ -14,9 +14,9 @@ std::string DsyMiscMgr::GetItemLink(uint32 entry, bool noColor/* = false*/)
 
     std::ostringstream oss;
     if (noColor)
-        oss  << "|Hitem:" << entry << ":0:" << "0:0:0:0|h[" << name << "]|h";
+        oss  << "|Hitem:" << entry  << ":0:0:0:0:0|h[" << name << "]|h";
     else
-        oss << "|c" << std::hex << ItemQualityColors[pItem->Quality] << std::dec << "|Hitem:" << entry << ":0:" << "0:0:0:0|h[" << name << "]|h|r";
+        oss << "|c" << std::hex << ItemQualityColors[pItem->Quality] << std::dec << "|Hitem:" << entry  << ":0:0:0:0:0|h[" << name << "]|h|r";
     return oss.str();
 }
 

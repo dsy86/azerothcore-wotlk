@@ -593,7 +593,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
                 itr->second->RemoveAurasDueToSpell(SPELL_PREPARATION);
                 itr->second->ResetAllPowers();
                 string msg = "战斗开始！你需要在此战场至少制造" + to_string(GetMinDmgOrHealing()) + "点伤害或治疗，才可以获得战斗奖励。";
-                ChatHandler(itr->second->GetSession()).PSendSysMessage(msg.c_str());
+                itr->second->SendMsgHint(msg);
                 //dsy: 互相刷新一下，会从友好状态变成敌对状态
                 for (BattlegroundPlayerMap::const_iterator itr2 = GetPlayers().begin(); itr2 != GetPlayers().end(); ++itr2)
                 {

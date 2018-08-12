@@ -8955,37 +8955,7 @@ void Player::_RemoveAllItemMods()
         }
     }
 
-    for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
-    {
-        if (m_items[i])
-        {
-            ItemTemplate const *proto = m_items[i]->GetTemplate();
-            if (!proto)
-                continue;
-            if (!m_items[i]->IsStone())
-                continue;
-            m_items[i]->ToStone()->ApplyStoneStats(false, this);
-        }
-    }
-
-    for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
-    {
-        if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-        {
-            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
-            {
-                if (m_items[j])
-                {
-                    ItemTemplate const *proto = m_items[j]->GetTemplate();
-                    if (!proto)
-                        continue;
-                    if (!m_items[j]->IsStone())
-                        continue;
-                    m_items[j]->ToStone()->ApplyStoneStats(false, this);
-                }
-            }
-        }
-    }
+    ApplyAllStoneStats(false);
 
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)
     sLog->outDebug(LOG_FILTER_PLAYER_ITEMS, "_RemoveAllItemMods complete.");
@@ -9040,37 +9010,7 @@ void Player::_ApplyAllItemMods()
         }
     }
 
-    for (uint8 i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
-    {
-        if (m_items[i])
-        {
-            ItemTemplate const *proto = m_items[i]->GetTemplate();
-            if (!proto)
-                continue;
-            if (!m_items[i]->IsStone())
-                continue;
-            m_items[i]->ToStone()->ApplyStoneStats(true, this);
-        }
-    }
-
-    for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
-    {
-        if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-        {
-            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
-            {
-                if (m_items[j])
-                {
-                    ItemTemplate const *proto = m_items[j]->GetTemplate();
-                    if (!proto)
-                        continue;
-                    if (!m_items[j]->IsStone())
-                        continue;
-                    m_items[j]->ToStone()->ApplyStoneStats(true, this);
-                }
-            }
-        }
-    }
+    ApplyAllStoneStats(true);
 
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)
     sLog->outDebug(LOG_FILTER_PLAYER_ITEMS, "_ApplyAllItemMods complete.");
@@ -12732,6 +12672,8 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
         UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, item, count);
         if (randomPropertyId)
             pItem->SetItemRandomProperties(randomPropertyId);
+        // dsy: set randomPropertyId to guid when create item
+        pItem->SetItemRandomProperties(randomPropertyId);
         pItem = StoreItem(dest, pItem, update);
 
 
@@ -18528,6 +18470,7 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
             aura->HandleAllEffects(itr->second, AURA_EFFECT_HANDLE_REAL, false);
     }
     ApplyLegendLevelStats(GetToken(LEGEND_LEVEL), true);
+    ApplyAllStoneStats(true);
     return true;
 }
 
